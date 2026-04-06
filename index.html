@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCHÜTZ VASITEX — Agente de Conteúdo MKT 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Montserrat', sans-serif; background: #f4f6fb; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+  /* ── API KEY SCREEN ── */
+  #api-screen {
+    position: fixed; inset: 0; background: #f4f6fb;
+    display: flex; align-items: center; justify-content: center; z-index: 100; overflow-y: auto; padding: 24px;
+  }
+  .api-card {
+    background: #fff; border-radius: 16px; box-shadow: 0 4px 32px rgba(0,46,152,0.10);
+    max-width: 540px; width: 100%; padding: 40px;
+  }
+  .logo-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+  .logo-bar .stripe { width: 4px; height: 36px; background: #002E98; border-radius: 2px; }
+  .logo-bar .company { font-size: 11px; font-weight: 700; color: #002E98; letter-spacing: 2px; }
+  .logo-bar .apptitle { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+  .api-card h2 { font-size: 20px; font-weight: 800; color: #002E98; margin-bottom: 8px; }
+  .api-card .subtitle { font-size: 13px; color: #666; margin-bottom: 24px; line-height: 1.6; }
+  .key-field-label { font-size: 10px; font-weight: 700; color: #999; letter-spacing: 1.2px; margin-bottom: 8px; }
+  .key-input-row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .key-input-row input { flex: 1; padding: 12px 16px; border: 2px solid #dde3f0; border-radius: 10px; font-size: 13px; font-family: 'Montserrat', sans-serif; color: #333; transition: border-color 0.2s; outline: none; }
+  .key-input-row input:focus { border-color: #1a7340; }
+  .key-input-row button { background: #1a7340; color: #fff; border: none; border-radius: 10px; padding: 12px 24px; font-weight: 700; font-size: 14px; cursor: pointer; font-family: 'Montserrat', sans-serif; white-space: nowrap; transition: background 0.2s; }
+  .key-input-row button:hover { background: #145c33; }
+  .api-hint { font-size: 11px; color: #aaa; line-height: 1.6; }
+  .api-hint a { color: #1a7340; font-weight: 600; text-decoration: none; }
+  .api-hint a:hover { text-decoration: underline; }
+  .api-error { font-size: 12px; color: #c33; margin-top: 8px; display: none; }
+
+  /* ── MAIN APP ── */
+  #app { display: none; flex-direction: column; height: 100vh; }
+
+  /* HEADER */
+  .header { background: #002E98; color: #fff; padding: 11px 20px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .header .hstripe { width: 4px; height: 30px; background: #fff; border-radius: 2px; opacity: 0.6; flex-shrink: 0; }
+  .header-titles { display: flex; flex-direction: column; }
+  .header .hcompany { font-size: 10px; font-weight: 700; letter-spacing: 2px; opacity: 0.7; }
+  .header .htitle { font-size: 14px; font-weight: 700; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+  /* INFO BUTTON */
+  .info-wrap { position: relative; display: flex; align-items: center; }
+  .info-btn { background: rgba(255,255,255,0.15); border: none; color: rgba(255,255,255,0.85); border-radius: 50%; width: 22px; height: 22px; font-size: 12px; font-weight: 800; cursor: default; font-family: inherit; display: flex; align-items: center; justify-content: center; }
+  .info-wrap:hover .info-tooltip { display: block; }
+  .info-tooltip { display: none; position: absolute; top: 30px; right: 0; background: #0d1b3e; color: #fff; border-radius: 10px; padding: 14px 18px; font-size: 11px; line-height: 1.8; white-space: nowrap; z-index: 99; box-shadow: 0 6px 24px rgba(0,0,0,0.35); }
+  .info-tooltip::before { content:''; position: absolute; top:-5px; right:9px; border:5px solid transparent; border-bottom-color:#0d1b3e; border-top:none; }
+  .tt-head { font-size: 9px; font-weight: 800; letter-spacing: 1.2px; opacity: 0.5; margin-bottom: 10px; }
+  .tt-model { font-weight: 800; color: #7dd3a8; display: inline-block; min-width: 110px; }
+  .tt-div { border-top: 1px solid rgba(255,255,255,0.1); margin: 8px 0; }
+  .tt-note { font-size: 10px; opacity: 0.5; margin-top: 10px; line-height: 1.5; }
+
+  .reset-btn { background: transparent; border: 1px solid rgba(255,255,255,0.28); color: #fff; border-radius: 8px; padding: 5px 13px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit; opacity: 0.8; white-space: nowrap; }
+  .reset-btn:hover { opacity: 1; }
+
+  /* QUOTA WARNING */
+  .quota-bar { background: #fff8e1; border-bottom: 1px solid #fde68a; padding: 9px 20px; font-size: 12px; color: #78350f; line-height: 1.5; flex-shrink: 0; display: none; }
+  .quota-bar a { color: #78350f; font-weight: 700; }
+
+  .body { display: flex; flex: 1; min-height: 0; }
+
+  /* SIDEBAR */
+  .sidebar { width: 285px; background: #fff; border-right: 1px solid #dde3f0; display: flex; flex-direction: column; flex-shrink: 0; }
+  .filters { padding: 13px 15px; border-bottom: 1px solid #eef0f8; }
+  .filter-label { font-size: 10px; font-weight: 700; color: #999; letter-spacing: 1.2px; margin-bottom: 7px; }
+  .filter-label:not(:first-child) { margin-top: 11px; }
+  .type-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+  .pill { font-size: 10px; padding: 4px 10px; border-radius: 20px; border: 1px solid #ddd; background: #fff; color: #555; cursor: pointer; font-weight: 600; font-family: inherit; transition: all 0.15s; }
+  .pill.active { color: #fff; border-color: transparent; }
+  .month-select { width: 100%; padding: 7px 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 12px; color: #333; font-family: inherit; outline: none; }
+  .event-list { flex: 1; overflow-y: auto; padding: 6px 0; }
+  .event-item { padding: 10px 15px; cursor: pointer; border-left: 4px solid transparent; transition: all 0.15s; }
+  .event-item:hover { background: #f8f9ff; }
+  .event-item.selected { border-left-color: var(--type-color); background: var(--type-bg); }
+  .event-item-top { display: flex; justify-content: space-between; align-items: center; }
+  .event-date { font-size: 12px; font-weight: 700; color: var(--type-color); }
+  .event-badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; background: var(--type-bg); color: var(--type-color); font-weight: 700; }
+  .event-name { font-size: 13px; color: #333; margin-top: 3px; line-height: 1.4; }
+  .sidebar-footer { padding: 9px 15px; border-top: 1px solid #eef0f8; font-size: 11px; color: #bbb; }
+  .month-group-header { padding: 7px 15px 5px; font-size: 10px; font-weight: 800; color: #002E98; letter-spacing: 1.5px; background: #f0f3fb; border-top: 1px solid #e4e9f5; border-bottom: 1px solid #e4e9f5; text-transform: uppercase; position: sticky; top: 0; z-index: 1; }
+  .month-group-header:first-child { border-top: none; }
+
+  /* MAIN PANEL */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+  .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state .label { font-size: 15px; font-weight: 600; color: #aaa; }
+  .empty-state .sub { font-size: 13px; margin-top: 6px; color: #ccc; }
+  .event-header { padding: 15px 22px; border-bottom: 1px solid #eef0f8; background: #fff; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .event-header-left .type-label { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; }
+  .event-header-left .event-title { font-size: 18px; font-weight: 800; color: #002E98; margin-top: 2px; }
+  .gen-btn { background: #002E98; color: #fff; border: none; border-radius: 10px; padding: 10px 22px; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: inherit; transition: background 0.2s; white-space: nowrap; }
+  .gen-btn:hover { background: #0D386F; }
+  .gen-btn:disabled { background: #bbb; cursor: not-allowed; }
+  .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  .content-area { flex: 1; overflow-y: auto; padding: 22px; }
+
+  /* PLACEHOLDER / LOADING */
+  .placeholder { background: #fff; border-radius: 12px; padding: 40px 32px; text-align: center; border: 2px dashed #dde3f0; }
+  .placeholder .ph-icon { font-size: 34px; margin-bottom: 12px; }
+  .placeholder .ph-text { font-size: 13px; color: #aaa; max-width: 360px; margin: 0 auto; line-height: 1.6; }
+  .placeholder .ph-hint { font-size: 12px; color: #ccc; margin-top: 12px; }
+  .loading-box { background: #fff; border-radius: 12px; padding: 48px 32px; text-align: center; color: #999; }
+  .loading-box .load-icon { font-size: 22px; margin-bottom: 12px; animation: pulse 1.5s ease-in-out infinite; }
+  .loading-box .load-text { font-size: 13px; }
+  .error-box { background: #fff5f5; border: 1px solid #fcc; border-radius: 10px; padding: 16px; color: #c33; font-size: 13px; line-height: 1.5; }
+
+  /* DUAL RESULTS */
+  .dual-wrap { display: flex; flex-direction: column; gap: 14px; }
+  .dual-cards { display: flex; gap: 14px; align-items: flex-start; }
+  .result-card { background: #fff; border-radius: 12px; border: 1px solid #dde3f0; overflow: hidden; flex: 1; min-width: 0; }
+  .result-header { padding: 11px 18px; border-bottom: 1px solid #eef0f8; display: flex; justify-content: space-between; align-items: center; }
+  .result-header-flash { background: #eef2fb; }
+  .result-header-lite  { background: #f4f9f6; }
+  .result-label { font-size: 11px; font-weight: 800; letter-spacing: 0.8px; }
+  .result-label-flash { color: #0D386F; }
+  .result-label-lite  { color: #1a7340; }
+  .copy-btn { font-size: 11px; padding: 4px 12px; border-radius: 7px; border: 1px solid #ddd; background: #fff; color: #555; cursor: pointer; font-weight: 600; font-family: inherit; transition: all 0.2s; }
+  .copy-btn-flash.copied { background: #0D386F; color: #fff; border-color: #0D386F; }
+  .copy-btn-lite.copied  { background: #1a7340; color: #fff; border-color: #1a7340; }
+  .result-body { padding: 18px 20px; font-size: 14px; color: #333; line-height: 1.85; white-space: pre-wrap; }
+
+  /* PROMPT BOX */
+  .prompt-box { background: #fff; border-radius: 12px; border: 1px solid #dde3f0; overflow: hidden; }
+  .prompt-toggle { display: flex; align-items: center; justify-content: space-between; padding: 11px 18px; cursor: pointer; user-select: none; }
+  .prompt-toggle-label { font-size: 10px; font-weight: 700; color: #bbb; letter-spacing: 1px; }
+  .prompt-arrow { font-size: 10px; color: #ccc; transition: transform 0.2s; }
+  .prompt-arrow.open { transform: rotate(180deg); }
+  .prompt-content { display: none; padding: 14px 18px 16px; font-size: 11.5px; color: #666; line-height: 1.7; white-space: pre-wrap; border-top: 1px solid #eef0f8; font-family: monospace; }
+  .prompt-content.open { display: block; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #dde3f0; border-radius: 3px; }
+
+  @media (max-width: 768px) {
+    .dual-cards { flex-direction: column; }
+    .sidebar { width: 240px; }
+    .header .htitle { font-size: 12px; }
+  }
+  @media (max-width: 560px) {
+    .body { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid #dde3f0; }
+    .event-list { max-height: 200px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- API KEY SCREEN -->
+<div id="api-screen">
+  <div class="api-card">
+    <div class="logo-bar">
+      <div class="stripe"></div>
+      <div>
+        <div class="company">SCHÜTZ VASITEX</div>
+        <div class="apptitle">Agente de Conteúdo MKT 2026</div>
+      </div>
+    </div>
+    <h2>Chave de acesso Gemini</h2>
+    <p class="subtitle">Uma chave padrão já está configurada — clique em Entrar para começar. Se os créditos se esgotarem, gere uma nova chave gratuita e substitua abaixo.</p>
+    <div class="key-field-label">GOOGLE GEMINI API KEY</div>
+    <div class="key-input-row">
+      <input type="password" id="gemini-key-input" autocomplete="off" />
+      <button onclick="handleApiKey()">Entrar</button>
+    </div>
+    <p class="api-hint">Para gerar uma nova chave gratuita: acesse <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> → <strong>Get API Key</strong> → <strong>Create API Key</strong>. Não exige cartão de crédito.</p>
+    <div class="api-error" id="api-error">Chave inválida. Verifique e tente novamente.</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="header">
+    <div class="hstripe"></div>
+    <div class="header-titles">
+      <div class="hcompany">SCHÜTZ VASITEX</div>
+      <div class="htitle">Agente de Conteúdo MKT 2026</div>
+    </div>
+    <div class="header-right">
+      <div class="info-wrap">
+        <div class="info-btn">?</div>
+        <div class="info-tooltip">
+          <div class="tt-head">LIMITES DO FREE TIER — GEMINI</div>
+          <div><span class="tt-model">2.5 Flash</span> 10 req/min · 250 req/dia</div>
+          <div class="tt-div"></div>
+          <div><span class="tt-model">2.5 Flash-Lite</span> 15 req/min · 1.000 req/dia</div>
+          <div class="tt-note">Ambos os modelos são acionados a cada geração.<br>Flash — velocidade e raciocínio · Flash-Lite — alta capacidade</div>
+        </div>
+      </div>
+      <button class="reset-btn" onclick="showApiScreen()">Trocar chave</button>
+    </div>
+  </div>
+
+  <div class="quota-bar" id="quota-bar">
+    <strong>Cota esgotada.</strong> O limite de requisições foi atingido. Clique em <strong>Trocar chave</strong> e insira uma nova chave gratuita obtida em <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>.
+  </div>
+
+  <div class="body">
+    <div class="sidebar">
+      <div class="filters">
+        <div class="filter-label">TIPO</div>
+        <div class="type-pills">
+          <button class="pill active" style="background:#002E98;border-color:#002E98" onclick="setFilter('type','all',this)">Todos</button>
+          <button class="pill" onclick="setFilter('type','Wallpaper',this)">Wallpaper</button>
+          <button class="pill" onclick="setFilter('type','Social',this)">Mídia Social</button>
+          <button class="pill" onclick="setFilter('type','Profissão',this)">Profissão</button>
+        </div>
+        <div class="filter-label">MÊS</div>
+        <select class="month-select" onchange="setFilter('month',this.value,null)">
+          <option value="all">Todos os meses</option>
+          <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
+          <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
+          <option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option>
+          <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+        </select>
+      </div>
+      <div class="event-list" id="event-list"></div>
+      <div class="sidebar-footer" id="sidebar-footer"></div>
+    </div>
+
+    <div class="main">
+      <div class="empty-state" id="empty-state">
+        <div class="icon">📅</div>
+        <div class="label">Selecione um evento na lista</div>
+        <div class="sub">Os dois modelos Gemini vão gerar textos para comparação</div>
+      </div>
+      <div id="event-panel" style="display:none;flex-direction:column;height:100%;">
+        <div class="event-header">
+          <div class="event-header-left">
+            <div class="type-label" id="panel-type-label"></div>
+            <div class="event-title" id="panel-event-title"></div>
+          </div>
+          <button class="gen-btn" id="gen-btn" onclick="handleGenerate()">
+            <span id="gen-btn-text">✦ Gerar conteúdo</span>
+          </button>
+        </div>
+        <div class="content-area" id="content-area"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_KEY = 'AIzaSyCvCs2EXtsSpk1OoPb3ihA5HiLvJpfyQi0';
+const MODELS = {
+  flash: { id: 'gemini-2.5-flash',      label: 'Gemini 2.5 Flash' },
+  lite:  { id: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite' }
+};
+const TYPE_CONFIG = {
+  Wallpaper: { label: 'Wallpaper',    color: '#0D386F', bg: '#e8f0fb' },
+  Social:    { label: 'Mídia Social', color: '#0063AE', bg: '#e0f0ff' },
+  Profissão: { label: 'Profissão',    color: '#002E98', bg: '#dde6fa' },
+};
+const EVENTS = [
+  { type:'Wallpaper', event:'Janeiro, Feliz Ano Novo',                        date:'2026-01-01' },
+  { type:'Wallpaper', event:'Fevereiro, Carnaval',                             date:'2026-02-01' },
+  { type:'Wallpaper', event:'Março, Dia das Mulheres',                         date:'2026-03-01' },
+  { type:'Wallpaper', event:'Abril, Páscoa',                                   date:'2026-04-01' },
+  { type:'Wallpaper', event:'Maio, Dia das Mães',                              date:'2026-05-01' },
+  { type:'Wallpaper', event:'Junho, Dia Mundial do Meio Ambiente',              date:'2026-06-01' },
+  { type:'Wallpaper', event:'Julho, Dia de Proteção às Florestas',             date:'2026-07-01' },
+  { type:'Wallpaper', event:'Agosto, Dia dos Pais',                            date:'2026-08-01' },
+  { type:'Wallpaper', event:'Setembro, Setembro Amarelo',                       date:'2026-09-01' },
+  { type:'Wallpaper', event:'Outubro, Outubro Rosa',                            date:'2026-10-01' },
+  { type:'Wallpaper', event:'Novembro, Novembro Azul',                          date:'2026-11-01' },
+  { type:'Wallpaper', event:'Dezembro, Boas Festas!',                           date:'2026-12-01' },
+  { type:'Social',    event:'Dia Internacional da Mulher',                      date:'2026-03-08' },
+  { type:'Social',    event:'Dia Mundial da Água',                              date:'2026-03-22' },
+  { type:'Social',    event:'Dia do Trabalho',                                  date:'2026-05-01' },
+  { type:'Social',    event:'Dia das Mães',                                     date:'2026-05-10' },
+  { type:'Social',    event:'Dia Mundial da Reciclagem',                        date:'2026-05-17' },
+  { type:'Social',    event:'Dia Mundial do Meio Ambiente',                     date:'2026-06-05' },
+  { type:'Social',    event:'Dia Mundial da Segurança dos Alimentos',           date:'2026-06-07' },
+  { type:'Social',    event:'Dia de Proteção às Florestas',                     date:'2026-07-17' },
+  { type:'Social',    event:'Dia dos Pais',                                     date:'2026-08-09' },
+  { type:'Social',    event:'Dia do Cliente',                                   date:'2026-09-15' },
+  { type:'Social',    event:'Dia do Comprador',                                 date:'2026-09-19' },
+  { type:'Social',    event:'Dia da Árvore',                                    date:'2026-09-21' },
+  { type:'Social',    event:'Dia da Natureza',                                  date:'2026-10-04' },
+  { type:'Social',    event:'Dia das Crianças',                                 date:'2026-10-12' },
+  { type:'Social',    event:'Dia do Consumo Consciente',                        date:'2026-10-15' },
+  { type:'Social',    event:'Dia Mundial do Solo',                              date:'2026-11-05' },
+  { type:'Social',    event:'Dia do Pantanal',                                  date:'2026-11-12' },
+  { type:'Social',    event:'Dia da Terra',                                     date:'2026-04-22' },
+  { type:'Social',    event:'Dia da Mata Atlântica',                            date:'2026-05-27' },
+  { type:'Social',    event:'Dia da Amazônia',                                  date:'2026-09-05' },
+  { type:'Social',    event:'Dia Mundial pela Limpeza da Água',                 date:'2026-09-19' },
+  { type:'Social',    event:'Dia Mundial do Solo',                              date:'2026-12-05' },
+  { type:'Profissão', event:'Dia do Eng. Ambiental',                           date:'2026-01-31' },
+  { type:'Profissão', event:'Dia do Auxiliar de Serviços Gerais',              date:'2026-02-22' },
+  { type:'Profissão', event:'Dia do Jovem Aprendiz',                           date:'2026-04-24' },
+  { type:'Profissão', event:'Dia do Profissional de Contabilidade',            date:'2026-04-25' },
+  { type:'Profissão', event:'Dia Mundial da Segurança e Saúde no Trabalho',    date:'2026-04-28' },
+  { type:'Profissão', event:'Dia do Profissional de Marketing',                date:'2026-05-08' },
+  { type:'Profissão', event:'Dia Internacional de Recursos Humanos',           date:'2026-05-20' },
+  { type:'Profissão', event:'Dia do Profissional de Logística',                date:'2026-06-06' },
+  { type:'Profissão', event:'Dia do Químico',                                  date:'2026-06-18' },
+  { type:'Profissão', event:'Dia da Recepcionista',                            date:'2026-07-26' },
+  { type:'Profissão', event:'Dia da Prevenção de Acidente do Trabalho',        date:'2026-07-27' },
+  { type:'Profissão', event:'Dia do Administrador',                            date:'2026-09-09' },
+  { type:'Profissão', event:'Dia do Cliente',                                  date:'2026-09-15' },
+  { type:'Profissão', event:'Dia do Caminhoneiro',                             date:'2026-09-16' },
+  { type:'Profissão', event:'Dia do Comprador',                                date:'2026-09-19' },
+  { type:'Profissão', event:'Dia do Técnico Industrial',                       date:'2026-09-23' },
+  { type:'Profissão', event:'Dia da Secretária',                               date:'2026-09-30' },
+  { type:'Profissão', event:'Dia do Gestor Comercial / Vendedor',              date:'2026-10-01' },
+  { type:'Profissão', event:'Dia do Operador de Empilhadeira',                 date:'2026-10-13' },
+  { type:'Profissão', event:'Dia do Auxiliar de Almoxarifado',                 date:'2026-10-13' },
+  { type:'Profissão', event:'Dia do Auxiliar Administrativo',                  date:'2026-10-17' },
+  { type:'Profissão', event:'Dia do Profissional de TI',                       date:'2026-10-19' },
+  { type:'Profissão', event:'Dia do Prof. de Qualidade',                       date:'2026-11-12' },
+  { type:'Profissão', event:'Dia do Eng. de Produção',                         date:'2026-12-17' },
+];
+
+let geminiKey = DEFAULT_KEY;
+let filterType = 'all';
+let filterMonth = 'all';
+let selectedEv = null;
+
+function formatDate(d) {
+  const dt = new Date(d + 'T00:00:00');
+  return String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0');
+}
+function getMonth(d) { return new Date(d + 'T00:00:00').getMonth(); }
+
+/* ── STARTUP ── */
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('gemini-key-input').value = DEFAULT_KEY;
+  const saved = sessionStorage.getItem('sv_gemini_key');
+  if (saved) geminiKey = saved;
+  launchApp();
+});
+
+function handleApiKey() {
+  const val = document.getElementById('gemini-key-input').value.trim();
+  if (!val || val.length < 10) { document.getElementById('api-error').style.display = 'block'; return; }
+  document.getElementById('api-error').style.display = 'none';
+  geminiKey = val;
+  sessionStorage.setItem('sv_gemini_key', val);
+  launchApp();
+}
+
+function launchApp() {
+  document.getElementById('api-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('quota-bar').style.display = 'none';
+  renderList();
+}
+
+function showApiScreen() {
+  document.getElementById('gemini-key-input').value = geminiKey;
+  document.getElementById('api-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+document.getElementById('gemini-key-input').addEventListener('keydown', e => { if (e.key==='Enter') handleApiKey(); });
+
+/* ── FILTERS ── */
+function setFilter(kind, val, btn) {
+  if (kind === 'type') {
+    filterType = val;
+    document.querySelectorAll('.pill').forEach(p => { p.classList.remove('active'); p.style.background='#fff'; p.style.borderColor='#ddd'; p.style.color='#555'; });
+    btn.classList.add('active'); btn.style.background='#002E98'; btn.style.borderColor='#002E98'; btn.style.color='#fff';
+  } else { filterMonth = val; }
+  renderList();
+}
+
+function renderList() {
+  const MONTH_NAMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  const filtered = EVENTS.filter(ev => {
+    if (filterType !== 'all' && ev.type !== filterType) return false;
+    if (filterMonth !== 'all' && getMonth(ev.date) !== parseInt(filterMonth)) return false;
+    return true;
+  }).sort((a,b) => a.date.localeCompare(b.date));
+
+  const list = document.getElementById('event-list');
+  list.innerHTML = '';
+  if (!filtered.length) { list.innerHTML = '<div style="padding:20px;color:#bbb;font-size:13px;text-align:center">Nenhum evento encontrado</div>'; }
+
+  let currentMonth = -1;
+  filtered.forEach(ev => {
+    const m = getMonth(ev.date);
+    if (m !== currentMonth) {
+      currentMonth = m;
+      const h = document.createElement('div');
+      h.className = 'month-group-header';
+      h.textContent = MONTH_NAMES[m];
+      list.appendChild(h);
+    }
+    const cfg = TYPE_CONFIG[ev.type];
+    const isSel = selectedEv && selectedEv.event===ev.event && selectedEv.date===ev.date && selectedEv.type===ev.type;
+    const d = document.createElement('div');
+    d.className = 'event-item' + (isSel ? ' selected' : '');
+    d.style.setProperty('--type-color', cfg.color);
+    d.style.setProperty('--type-bg', cfg.bg);
+    d.innerHTML = `<div class="event-item-top"><span class="event-date" style="color:${cfg.color}">${formatDate(ev.date)}</span><span class="event-badge" style="background:${cfg.bg};color:${cfg.color}">${cfg.label}</span></div><div class="event-name">${ev.event}</div>`;
+    d.onclick = () => selectEvent(ev);
+    list.appendChild(d);
+  });
+  document.getElementById('sidebar-footer').textContent = filtered.length + ' evento(s)';
+}
+
+function selectEvent(ev) {
+  selectedEv = ev;
+  renderList();
+  const cfg = TYPE_CONFIG[ev.type];
+  document.getElementById('empty-state').style.display = 'none';
+  const panel = document.getElementById('event-panel');
+  panel.style.display = 'flex';
+  document.getElementById('panel-type-label').textContent = cfg.label.toUpperCase() + ' · ' + formatDate(ev.date);
+  document.getElementById('panel-type-label').style.color = cfg.color;
+  document.getElementById('panel-event-title').textContent = ev.event;
+  document.getElementById('gen-btn-text').textContent = '✦ Gerar conteúdo';
+  const icons = { Wallpaper:'🖼️', Social:'📱', Profissão:'🏆' };
+  const hints = { Wallpaper:'Prompt de imagem para IA + texto para o Canva', Social:'Post com a voz da SCHÜTZ VASITEX', Profissão:'Post comemorativo para a profissão' };
+  document.getElementById('content-area').innerHTML = `<div class="placeholder"><div class="ph-icon">${icons[ev.type]}</div><div class="ph-text">${hints[ev.type]}</div><div class="ph-hint">Clique em "Gerar conteúdo" — Flash e Flash-Lite serão acionados simultaneamente</div></div>`;
+}
+
+/* ── PROMPTS ── */
+const brand = `SCHÜTZ VASITEX é uma empresa brasileira com mais de 60 anos de história, especializada em embalagens industriais (IBCs 1000L, tambores HDPE, bombonas). A empresa tem compromisso com economia circular, circularidade, sustentabilidade e o ciclo de vida das embalagens. Quando fizer sentido ao contexto do post, esses temas devem aparecer de forma natural no texto. Tom: sério sem ser frio, próximo sem ser informal demais. Tagline: "Containing Everything That Matters".`;
+
+const writingRules = `REGRAS DE REDAÇÃO OBRIGATÓRIAS
+
+1. HÍFENS E TRAVESSÕES NO CORPO DO TEXTO. Os caracteres "-", "–" e "—" são absolutamente proibidos no corpo do texto, dentro dos parágrafos. Nem como separador, nem como pausa, nem como recurso estilístico, nem em palavras compostas. Esses caracteres são permitidos apenas em títulos que antecedem os posts.
+
+2. DOIS PONTOS NO CORPO DO TEXTO. O caractere ":" é absolutamente proibido dentro dos parágrafos. Não use para introduzir frases, não use para dar ênfase, não use em nenhuma situação dentro do corpo do texto. Dois pontos são permitidos apenas em títulos que antecedem os posts.
+
+3. EMOJIS. No máximo 1 por post inteiro, somente se fizer sentido real. Na dúvida, não use.
+
+4. ESCRITA HUMANA. Escreva como uma pessoa escreve, não como uma IA. Frases com ritmo natural, sem simetria artificial entre parágrafos, sem fórmulas repetitivas como "X é mais do que Y, é Z". Varie o comprimento das frases. Comece frases com verbos quando fizer sentido. Sem listas numeradas ou com marcadores dentro do post.
+
+5. SEM CLICHÊS. Proibido usar "sinônimo de", "pilar fundamental", "cada vez mais", "no mundo de hoje", "é com orgulho que", "somos gratos", "juntos somos mais fortes", "seguir em frente", "fazer a diferença".
+
+6. TAMANHO. Máximo 3 parágrafos por post. Sem exceção.
+
+7. SEM EXAGERO EMOCIONAL. O texto pode ser tocante mas não dramático.
+
+8. TOM INSTITUCIONAL. Seja direto e elegante. Não entre em detalhes, não explique demais. O texto deve soar como uma comunicação de marca madura, que diz o necessário com precisão e para por aí.
+
+9. SEM SOBERBA. Nada de tom de superioridade, autoelogio ou afirmações que coloquem a SCHÜTZ VASITEX acima de outros. A elegância vem da inteligência e da leveza.
+
+10. SEM DEPRECIAÇÃO. Jamais deprecie, critique ou diminua pessoas, instituições, pensamentos ou qualquer outra coisa, em nenhum contexto, sob nenhuma justificativa.
+
+11. TOM POSITIVO. Redija sempre a partir do que é bom, do que existe, do que se celebra. Evite construções negacionistas. Afirme o positivo diretamente.`;
+
+const systemPrompt = `Você é um redator institucional da SCHÜTZ VASITEX.
+
+REGRAS ABSOLUTAS E INVIOLÁVEIS PARA O CORPO DOS TEXTOS:
+
+O caractere ":" (dois pontos) é terminantemente proibido dentro de qualquer parágrafo. Não existe exceção. Se uma frase naturalmente usaria dois pontos, você deve reescrevê-la por completo usando outra construção gramatical que transmita a mesma ideia sem o caractere.
+
+Os caracteres "-", "–" e "—" (hífen e travessões) são terminantemente proibidos dentro de qualquer parágrafo. Não existe exceção. Se uma frase naturalmente usaria esses caracteres, reescreva-a por completo.
+
+Esses caracteres são permitidos apenas em títulos e cabeçalhos que organizam sua resposta, nunca dentro dos parágrafos.
+
+ANTES DE ENTREGAR SUA RESPOSTA: releia cada parágrafo individualmente. Se encontrar ":", "-", "–" ou "—" em qualquer parágrafo, reescreva aquela frase antes de entregar.`;
+
+function buildPrompt(ev) {
+  if (ev.type === 'Wallpaper') {
+    return `Você é um especialista em branding e geração de prompts para imagens com IA.\n\nA empresa é a SCHÜTZ VASITEX. ${brand}\n\nO wallpaper é para o mês e tema "${ev.event}". Crie um prompt de imagem em inglês para usar no Midjourney, DALL-E, Gemini ou Canva AI. A paleta deve usar azul profundo (#002E98), azul marinho (#0D386F), azul médio (#0063AE) e branco. A estética deve ser industrial, moderna, clean e corporativa. O prompt não deve incluir texto na imagem, pois o texto será adicionado no Canva. O formato é landscape 16:9.\n\n${writingRules}\n\nEntregue três itens. Primeiro, o prompt de imagem em inglês, pronto para copiar. Segundo, um texto sugerido em português para sobrepor no Canva, com no máximo 2 frases curtas. Terceiro, uma dica de composição indicando onde posicionar o texto na imagem.`;
+  }
+  if (ev.type === 'Social') {
+    if (ev.event === 'Dia do Comprador') {
+      return `Você é um redator de conteúdo para redes sociais com profundo conhecimento da voz da SCHÜTZ VASITEX. ${brand}\n\nA data comemorativa é "${ev.event}", em ${formatDate(ev.date)}.\n\n${writingRules}\n\nGere 2 textos distintos para esta data.\n\nO primeiro com foco no comprador como cliente da SCHÜTZ VASITEX (profissionais e empresas que adquirem embalagens industriais). Tom de reconhecimento e valorização do relacionamento comercial, leve e positivo.\n\nO segundo com foco no comprador como colaborador interno da SCHÜTZ VASITEX (profissional de compras do time). Tom de homenagem genuína à função, celebrativo e acolhedor. Caráter interno.\n\nCada texto deve ter no máximo 3 parágrafos e de 3 a 5 hashtags ao final, fora do corpo do texto.`;
+    }
+    return `Você é um redator de conteúdo para redes sociais com profundo conhecimento da voz da SCHÜTZ VASITEX. ${brand}\n\nA data comemorativa é "${ev.event}", em ${formatDate(ev.date)}.\n\n${writingRules}\n\nGere 1 post. Tom de reflexão leve e positiva sobre o tema da data. Não seja impositivo nem provoque o leitor. Escreva como alguém que tem uma perspectiva genuína e a compartilha com naturalidade. Conecte a data ao contexto da SCHÜTZ VASITEX de forma orgânica, apenas se a conexão for natural. Inclua de 3 a 5 hashtags ao final, fora do corpo do texto.`;
+  }
+  if (ev.type === 'Profissão') {
+    if (ev.event === 'Dia do Comprador') {
+      return `Você é um redator de conteúdo para redes sociais com profundo conhecimento da voz da SCHÜTZ VASITEX. ${brand}\n\nA data comemorativa é "${ev.event}", em ${formatDate(ev.date)}.\n\n${writingRules}\n\nGere 2 textos distintos para esta data.\n\nO primeiro com foco no comprador como cliente da SCHÜTZ VASITEX. Tom de reconhecimento e valorização do relacionamento comercial, leve e positivo.\n\nO segundo com foco no comprador como colaborador interno da SCHÜTZ VASITEX. Tom de homenagem genuína à função, celebrativo e acolhedor. Caráter interno.\n\nCada texto deve ter no máximo 3 parágrafos e de 3 a 5 hashtags com #SCHÜTZVASITEX ao final, fora do corpo do texto.`;
+    }
+    const mktContext = ev.event === 'Dia do Profissional de Marketing' ? `Esta data merece atenção especial. O texto deve começar obrigatoriamente pelo lado estratégico da profissão: análise de cenários, interpretação de dados financeiros, mapeamento de tendências, transformação de números em decisões que definem o rumo das empresas. Só ao final, a comunicação e a criatividade aparecem como a cereja do bolo. Jamais inverta essa ordem. Jamais vitimize a profissão. É proibido iniciar com construções do tipo "Antes de qualquer X existir" ou "Antes de qualquer X acontecer". Encontre entradas originais que posicionem o profissional no centro da estratégia.` : '';
+    return `Você é um redator de conteúdo para redes sociais com profundo conhecimento da voz da SCHÜTZ VASITEX. ${brand}\n\nA SCHÜTZ VASITEX é uma empresa de embalagens industriais. Nunca a caracterize como indústria de chão de fábrica. A empresa tem colaboradores nas áreas de logística, qualidade, segurança, comercial, administrativo e TI.\n\nA data comemorativa é "${ev.event}", em ${formatDate(ev.date)}.\n\n${writingRules}\n\nNunca seja provocativo. O post é uma homenagem, não um argumento. Celebre com leveza e sinceridade.\n\n${mktContext}\n\nGere 1 post comemorativo como uma homenagem genuína à profissão, com calor humano e respeito. Inclua de 3 a 5 hashtags com #SCHÜTZVASITEX ao final, fora do corpo do texto. Sem clichês de RH, sem frases de calendário.`;
+  }
+}
+
+/* ── API CALL ── */
+async function callModel(modelKey, prompt) {
+  const fullPrompt = systemPrompt + '\n\n' + prompt;
+  const modelId = MODELS[modelKey].id;
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${geminiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: fullPrompt }] }],
+      generationConfig: { maxOutputTokens: 2048, temperature: 0.9, thinkingConfig: { thinkingBudget: 0 } }
+    })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || 'Erro na API');
+  return data.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+}
+
+function isQuotaError(msg) {
+  return /quota|rate.limit|429|resource.exhausted/i.test(msg || '');
+}
+
+function resultCard(modelKey, text) {
+  const isFlash = modelKey === 'flash';
+  const label = MODELS[modelKey].label.toUpperCase();
+  const headerClass = isFlash ? 'result-header-flash' : 'result-header-lite';
+  const labelClass  = isFlash ? 'result-label-flash'  : 'result-label-lite';
+  const copyClass   = isFlash ? 'copy-btn-flash'       : 'copy-btn-lite';
+  const copyId      = 'copy-' + modelKey;
+  const bodyId      = 'body-' + modelKey;
+  const isError     = text.startsWith('⚠');
+  return `<div class="result-card">
+    <div class="result-header ${headerClass}">
+      <span class="result-label ${labelClass}">${label}</span>
+      ${!isError ? `<button class="copy-btn ${copyClass}" id="${copyId}" onclick="copyResult('${bodyId}','${copyId}')">Copiar</button>` : ''}
+    </div>
+    <div class="result-body ${isError ? 'error-box' : ''}" id="${bodyId}"></div>
+  </div>`;
+}
+
+function togglePrompt() {
+  const content = document.getElementById('prompt-content');
+  const arrow   = document.getElementById('prompt-arrow');
+  const open = content.classList.toggle('open');
+  arrow.classList.toggle('open', open);
+}
+
+/* ── GENERATE ── */
+async function handleGenerate() {
+  if (!selectedEv) return;
+  const btn = document.getElementById('gen-btn');
+  const btnText = document.getElementById('gen-btn-text');
+  btn.disabled = true;
+  btnText.innerHTML = '<span class="spinner"></span> Gerando...';
+  document.getElementById('quota-bar').style.display = 'none';
+
+  const ca = document.getElementById('content-area');
+  ca.innerHTML = `<div class="loading-box"><div class="load-icon">✦</div><div class="load-text">Flash e Flash-Lite gerando em paralelo...</div></div>`;
+
+  const prompt = buildPrompt(selectedEv);
+
+  const [flashResult, liteResult] = await Promise.all([
+    callModel('flash', prompt).catch(e => '⚠ ' + e.message),
+    callModel('lite',  prompt).catch(e => '⚠ ' + e.message),
+  ]);
+
+  const anyQuota = isQuotaError(flashResult) || isQuotaError(liteResult);
+  if (anyQuota) document.getElementById('quota-bar').style.display = 'block';
+
+  ca.innerHTML = `
+    <div class="dual-wrap">
+      <div class="dual-cards">
+        ${resultCard('flash', flashResult)}
+        ${resultCard('lite',  liteResult)}
+      </div>
+      <div class="prompt-box">
+        <div class="prompt-toggle" onclick="togglePrompt()">
+          <span class="prompt-toggle-label">PROMPT UTILIZADO</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="copy-btn" id="copy-prompt-btn" onclick="event.stopPropagation();copyPrompt()" style="font-size:11px;padding:3px 11px">Copiar prompt</button>
+            <span class="prompt-arrow" id="prompt-arrow">▼</span>
+          </div>
+        </div>
+        <div class="prompt-content" id="prompt-content"></div>
+      </div>
+    </div>`;
+
+  document.getElementById('body-flash').textContent = flashResult;
+  document.getElementById('body-lite').textContent  = liteResult;
+  document.getElementById('prompt-content').textContent = systemPrompt + '\n\n' + prompt;
+
+  btnText.textContent = '↺ Gerar novamente';
+  btn.disabled = false;
+}
+
+function copyPrompt() {
+  const text = document.getElementById('prompt-content')?.textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-prompt-btn');
+    btn.textContent = '✓ Copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copiar prompt'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function copyResult(bodyId, btnId) {
+  const text = document.getElementById(bodyId)?.textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById(btnId);
+    const prev = btn.textContent;
+    btn.textContent = '✓ Copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = prev; btn.classList.remove('copied'); }, 2000);
+  });
+}
+</script>
+</body>
+</html>
