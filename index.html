@@ -426,7 +426,7 @@ function selectEvent(ev) {
 }
 
 /* ── PROMPTS ── */
-const brand = `SCHÜTZ VASITEX é uma empresa brasileira com mais de 60 anos de história, especializada em embalagens industriais (IBCs 1000L, tambores HDPE, bombonas). A empresa tem compromisso com economia circular, circularidade, sustentabilidade e o ciclo de vida das embalagens. Quando fizer sentido ao contexto do post, esses temas devem aparecer de forma natural no texto. Tom: sério sem ser frio, próximo sem ser informal demais. Tagline: "Containing Everything That Matters".`;
+const brand = `SCHÜTZ VASITEX é uma empresa brasileira com mais de 60 anos de história, especializada em embalagens industriais (IBCs 1000L, tambores HDPE, bombonas). A empresa tem compromisso com economia circular, circularidade, sustentabilidade e o ciclo de vida das embalagens. Quando fizer sentido ao contexto do post, esses temas devem aparecer de forma natural no texto. Tom: sério sem ser frio, próximo sem ser informal demais.`;
 
 const writingRules = `REGRAS DE REDAÇÃO OBRIGATÓRIAS
 
@@ -466,7 +466,7 @@ ANTES DE ENTREGAR SUA RESPOSTA: releia cada parágrafo individualmente. Se encon
 
 function buildPrompt(ev) {
   if (ev.type === 'Wallpaper') {
-    return `Você é um especialista em branding e geração de prompts para imagens com IA.\n\nA empresa é a SCHÜTZ VASITEX. ${brand}\n\nO wallpaper é para o mês e tema "${ev.event}". Crie um prompt de imagem em inglês para usar no Midjourney, DALL-E, Gemini ou Canva AI. A paleta deve usar azul profundo (#002E98), azul marinho (#0D386F), azul médio (#0063AE) e branco. A estética deve ser industrial, moderna, clean e corporativa. O prompt não deve incluir texto na imagem, pois o texto será adicionado no Canva. O formato é landscape 16:9.\n\n${writingRules}\n\nEntregue três itens. Primeiro, o prompt de imagem em inglês, pronto para copiar. Segundo, um texto sugerido em português para sobrepor no Canva, com no máximo 2 frases curtas. Terceiro, uma dica de composição indicando onde posicionar o texto na imagem.`;
+    return `Você é um diretor de arte e geração de prompts para imagens com IA. A empresa é a SCHÜTZ VASITEX, uma empresa industrial brasileira com identidade visual sóbria e corporativa.\n\nO wallpaper é para o mês e tema "${ev.event}". Crie uma imagem para usar no Midjourney, DALL-E, ChatGPT, Gemini ou Canva AI.\n\nA composição deve posicionar o elemento visual principal à direita ou no canto direito da imagem, deixando o lado esquerdo limpo e com fundo suave — esse espaço será usado para adicionar texto no Canva. O formato é landscape 16:9.\n\nPara temas como "Dia das Mães", "Dia das Mulheres" e "Dia dos Pais" opte por ilustração vetorial estilo paper cut, com camadas sobrepostas, sombras suaves e estética editorial contemporânea.\n\nJá para a "Páscoa" e "Dia das Crianças", use ilustração em aquarela digital, estilo soft realism e estética emocional delicada.\n\nPara "Dia Mundial do Meio Ambiente", "Dia de Proteção às Florestas" e tudo que tiver relação com sustentabilidade e meio ambiente, use render 3D conceitual estilo publicidade, como por exemplo gota de água em vidro translúcido contendo ecossistema interno, esfera tipo vidro ou outro elemento análogo que transmita modernidade, iluminação suave e acabamento premium.\n\nPara todo outros temas, use render 3D fotorrealista com iluminação suave de estúdio e estética corporativa.\n\nO resultado deve ser sempre elegante e corporativo. Escolha também a paleta que melhor serve o tema. Tons neutros funcionam bem para datas como por exemplo Dia das Mães ou Dia das Mulheres. Cores mais dramáticas e saturadas funcionam para temas como por exemplo meio ambiente, Carnaval, Páscoa ou Natal.\n\nQuando fizer sentido ao tema, incorpore tons azuis como referência discreta da identidade da marca.\n\nA composição deve sempre incluir ao menos um elemento visual concreto como uma silhueta humana, figura, objeto, gota, planta, animal ou forma reconhecível com conexão direta ao tema. Não use elementos clichês como coração e rosas, flores, use apenas quando pertinentes ao tema, nunca em excesso, coisas muito rebuscadas jamais e preze por um layout sempre clean.\n\nOutros recursos criativos como aquarela realista, porém supermoderna ou arte em linha fina também estilo moderno pode complementar quando fizerem sentido mesclando os estilos. Se optar por aquarela, o tratamento deve ser de obra de arte realista, refinada ultramoderna, quase uma ilustração real, nunca com viés infantil.\n\nA imagem a ser gerada não deve incluir texto, pois o texto será adicionado no Canva.\n\nEntregue três itens. Primeiro, resultado do prompt de imagem em inglês deve conter com todas as orientações, observações, sem exceções, contempladas aqui, pronto para copiar. Segundo, um texto sugerido em português para sobrepor no Canva, com no máximo 2 frases curtas. Terceiro, uma dica de composição indicando onde posicionar o texto na imagem.`;
   }
   if (ev.type === 'Social') {
     if (ev.event === 'Dia do Comprador') {
@@ -484,8 +484,8 @@ function buildPrompt(ev) {
 }
 
 /* ── API CALL ── */
-async function callModel(modelKey, prompt) {
-  const fullPrompt = systemPrompt + '\n\n' + prompt;
+async function callModel(modelKey, prompt, useSystem = true) {
+  const fullPrompt = useSystem ? systemPrompt + '\n\n' + prompt : prompt;
   const modelId = MODELS[modelKey].id;
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${geminiKey}`, {
     method: 'POST',
@@ -543,9 +543,10 @@ async function handleGenerate() {
 
   const prompt = buildPrompt(selectedEv);
 
+  const useSystem = selectedEv.type !== 'Wallpaper';
   const [flashResult, liteResult] = await Promise.all([
-    callModel('flash', prompt).catch(e => '⚠ ' + e.message),
-    callModel('lite',  prompt).catch(e => '⚠ ' + e.message),
+    callModel('flash', prompt, useSystem).catch(e => '⚠ ' + e.message),
+    callModel('lite',  prompt, useSystem).catch(e => '⚠ ' + e.message),
   ]);
 
   const anyQuota = isQuotaError(flashResult) || isQuotaError(liteResult);
@@ -571,7 +572,7 @@ async function handleGenerate() {
 
   document.getElementById('body-flash').textContent = flashResult;
   document.getElementById('body-lite').textContent  = liteResult;
-  document.getElementById('prompt-content').textContent = systemPrompt + '\n\n' + prompt;
+  document.getElementById('prompt-content').textContent = useSystem ? systemPrompt + '\n\n' + prompt : prompt;
 
   btnText.textContent = '↺ Gerar novamente';
   btn.disabled = false;
