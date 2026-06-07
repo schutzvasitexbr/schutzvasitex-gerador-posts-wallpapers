@@ -152,6 +152,34 @@
     .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid #dde3f0; }
     .event-list { max-height: 200px; }
   }
+
+  /* ── IMAGE CONFIG ── */
+  .img-config-card { background:#fff; border-radius:12px; border:1px solid #dde3f0; padding:20px 22px; margin-bottom:14px; }
+  .img-prompt-section { background:#fff; border-radius:12px; border:1px solid #dde3f0; overflow:hidden; margin-top:14px; }
+  .img-section-header { padding:12px 18px 14px; border-bottom:1px solid #eef0f8; background:#f8f9ff; display:flex; align-items:center; gap:8px; }
+  .img-section-icon { font-size:14px; }
+  .img-section-label { font-size:10px; font-weight:800; color:#0D386F; letter-spacing:1.2px; }
+  .img-section-body { padding:18px 20px; }
+  .config-label { font-size:10px; font-weight:800; color:#aaa; letter-spacing:1.2px; margin-bottom:9px; }
+  .format-pills { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:18px; }
+  .format-pill { padding:6px 14px; border-radius:20px; border:2px solid #dde3f0; background:#fff; color:#555; cursor:pointer; font-size:11px; font-weight:700; font-family:inherit; transition:all 0.15s; white-space:nowrap; }
+  .format-pill.active { background:#002E98; border-color:#002E98; color:#fff; }
+  .format-pill:hover:not(.active) { border-color:#9ab; background:#f4f6fb; }
+  .style-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+  .style-card { padding:10px 11px; border-radius:9px; border:2px solid #dde3f0; background:#fff; cursor:pointer; transition:all 0.15s; position:relative; }
+  .style-card:hover:not(.active) { border-color:#9ab; background:#f4f6fb; }
+  .style-card.active { border-color:#002E98; background:#e8f0fb; }
+  .style-card-name { font-size:10px; font-weight:800; color:#333; margin-bottom:3px; line-height:1.3; }
+  .style-card.active .style-card-name { color:#002E98; }
+  .style-card-desc { font-size:9.5px; color:#aaa; line-height:1.4; }
+  .style-card.active .style-card-desc { color:#5577bb; }
+  .suggested-badge { font-size:8px; font-weight:800; color:#1a7340; background:#e6f4ec; border-radius:4px; padding:1px 5px; display:inline-block; letter-spacing:0.3px; }
+  .img-gen-btn { background:#0D386F; color:#fff; border:none; border-radius:10px; padding:9px 20px; font-weight:700; font-size:13px; cursor:pointer; font-family:inherit; margin-top:16px; transition:background 0.2s; display:inline-flex; align-items:center; gap:8px; }
+  .img-gen-btn:hover { background:#092a55; }
+  .img-gen-btn:disabled { background:#bbb; cursor:not-allowed; }
+  .img-results-wrap { margin-top:14px; }
+  @media (max-width:900px) { .style-grid { grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:560px) { .style-grid { grid-template-columns:1fr 1fr; } }
 </style>
 </head>
 <body>
@@ -289,7 +317,6 @@ const EVENTS = [
   { type:'Social',    event:'Dia da Natureza',                                  date:'2026-10-04' },
   { type:'Social',    event:'Dia das Crianças',                                 date:'2026-10-12' },
   { type:'Social',    event:'Dia do Consumo Consciente',                        date:'2026-10-15' },
-  { type:'Social',    event:'Dia Mundial do Solo',                              date:'2026-11-05' },
   { type:'Social',    event:'Dia do Pantanal',                                  date:'2026-11-12' },
   { type:'Social',    event:'Dia da Terra',                                     date:'2026-04-22' },
   { type:'Social',    event:'Dia da Mata Atlântica',                            date:'2026-05-27' },
@@ -411,6 +438,8 @@ function renderList() {
 
 function selectEvent(ev) {
   selectedEv = ev;
+  selectedStyle = getSuggestedStyle(ev);
+  selectedFormat = ev.type === 'Profissão' ? 'a4' : ev.type === 'Social' ? 'square' : '16x9';
   renderList();
   const cfg = TYPE_CONFIG[ev.type];
   document.getElementById('empty-state').style.display = 'none';
@@ -419,10 +448,30 @@ function selectEvent(ev) {
   document.getElementById('panel-type-label').textContent = cfg.label.toUpperCase() + ' · ' + formatDate(ev.date);
   document.getElementById('panel-type-label').style.color = cfg.color;
   document.getElementById('panel-event-title').textContent = ev.event;
-  document.getElementById('gen-btn-text').textContent = '✦ Gerar conteúdo';
-  const icons = { Wallpaper:'🖼️', Social:'📱', Profissão:'🏆' };
-  const hints = { Wallpaper:'Prompt de imagem para IA + texto para o Canva', Social:'Post com a voz da SCHÜTZ VASITEX', Profissão:'Post comemorativo para a profissão' };
-  document.getElementById('content-area').innerHTML = `<div class="placeholder"><div class="ph-icon">${icons[ev.type]}</div><div class="ph-text">${hints[ev.type]}</div><div class="ph-hint">Clique em "Gerar conteúdo" — Flash e Flash-Lite serão acionados simultaneamente</div></div>`;
+
+  const ca = document.getElementById('content-area');
+  if (ev.type === 'Wallpaper') {
+    document.getElementById('gen-btn-text').textContent = '🖼️ Gerar Prompt de Imagem';
+    ca.innerHTML =
+      '<div class="img-config-card">' + renderFormatSelector() + renderStyleSelector(selectedStyle) + '</div>' +
+      '<div class="img-results-wrap" id="img-results-area"></div>';
+  } else {
+    document.getElementById('gen-btn-text').textContent = '📝 Gerar Texto';
+    const hints = { Social:'Post com a voz da SCHÜTZ VASITEX', Profissão:'Post comemorativo para a profissão' };
+    ca.innerHTML =
+      '<div id="text-results-area"><div class="placeholder"><div class="ph-icon">📝</div>' +
+      '<div class="ph-text">' + hints[ev.type] + '</div>' +
+      '<div class="ph-hint">Clique em "Gerar Texto" — Flash e Flash-Lite serão acionados simultaneamente</div></div></div>' +
+      '<div class="img-prompt-section">' +
+        '<div class="img-section-header"><span class="img-section-icon">🖼️</span><span class="img-section-label">PROMPT DE IMAGEM</span></div>' +
+        '<div class="img-section-body">' + renderFormatSelector() + renderStyleSelector(selectedStyle) +
+          '<button class="img-gen-btn" id="img-gen-btn" onclick="handleGenerateImage()">' +
+            '<span id="img-gen-btn-text">✦ Gerar Prompt de Imagem</span>' +
+          '</button>' +
+          '<div class="img-results-wrap" id="img-results-area"></div>' +
+        '</div>' +
+      '</div>';
+  }
 }
 
 /* ── PROMPTS ── */
@@ -464,20 +513,346 @@ Esses caracteres são permitidos apenas em títulos e cabeçalhos que organizam 
 
 ANTES DE ENTREGAR SUA RESPOSTA: releia cada parágrafo individualmente. Se encontrar ":", "-", "–" ou "—" em qualquer parágrafo, reescreva aquela frase antes de entregar.`;
 
-const WALLPAPER_CONTEXT = {
-  'Janeiro, Feliz Ano Novo':                       'New Year celebration — joy, new beginnings, optimism.',
-  'Fevereiro, Carnaval':                            "Brazil's biggest popular festival — joy, movement, colors.",
-  'Setembro, Setembro Amarelo':                     'Mental health awareness month.',
-  'Outubro, Outubro Rosa':                          "Women's health awareness month.",
-  'Novembro, Novembro Azul':                        "Men's health awareness month.",
-  'Dezembro, Boas Festas!':                         'Christmas and New Year\'s Eve season.',
+/* ── IMAGE GENERATION SYSTEM ── */
+
+let selectedFormat = '16x9';
+let selectedStyle  = 'watercolor';
+
+const SPECIAL_DATE_CONTEXT = {
+  'Janeiro, Feliz Ano Novo':   "New Year celebration — joy, new beginnings, and optimism. No human characters. Choose only 2 to 3 iconic New Year elements — such as fireworks, confetti, sparklers, stars, golden balloons, or party poppers — and compose them with restraint and elegance. Include the number {YEAR} displayed prominently in the same creative paper-cut style — bold and celebratory. Background in soft neutral pastel tones: warm ivory, pale champagne, soft blush, or light cream. Incorporate the brand's deep royal blue (#002E98) as the dominant accent color throughout the elements and the year number — creating a cohesive visual identity between the composition and the SCHÜTZ VASITEX brand. Keep the composition clean, airy, and uncluttered — suitable for a premium corporate environment.",
+  'Fevereiro, Carnaval':       "Brazil's biggest popular festival — joy, movement, vibrant colors. Focus on carnival objects and symbolic elements: ornate masks, colorful confetti, feathers, streamers, musical instruments, abstract patterns inspired by carnival costumes. Do NOT depict people with little or no clothing, exposed or provocative bodies, or any sexually suggestive imagery. The image must be elegant and suitable for a formal corporate environment.",
+  'Abril, Páscoa':             "Easter celebration — elegance and sophistication. Focus on premium 3D rendered Easter objects: intricately decorated Easter eggs with geometric and abstract patterns, fine chocolate pieces, silver and metallic ornaments, spring botanical elements. If a rabbit is included, place it discreetly in the background as a secondary detail — never as the main subject. Incorporate the brand's deep royal blue (#002E98) as a dominant accent color in the eggs, ornaments, and decorative elements. Style: realistic and elegant 3D render, cinematic lighting, premium materials — polished surfaces, satin, silver leaf. NOT Pixar-style, NOT cartoon aesthetics, NOT childlike or feminine. Tone: sophisticated, clean, and suitable for a premium corporate environment.",
+  'Outubro, Outubro Rosa':     "Women's health awareness month.",
+  'Novembro, Novembro Azul':   "Men's health awareness month.",
+  'Dezembro, Boas Festas!':    "Year-end holiday season — sophistication and elegance. No human characters. Focus entirely on iconic festive objects rendered in premium 3D: champagne flutes with golden bubbles, beautifully wrapped gifts with satin ribbons, ornate Christmas ornaments, a decorated Christmas tree, candles with warm glow, pine branches, snowflakes, garlands. Optionally include a small Santa Claus figurine or silhouette discreetly placed among the objects as a clever hidden detail — wearing a deep royal blue suit instead of the traditional red, matching the brand's identity. Color palette dominated by deep royal blue (similar to #002E98), complemented by gold, silver, and warm white accents. Style: realistic and elegant 3D render, cinematic lighting, premium materials — crystal, gold, velvet, satin. NOT Pixar-style, NOT cartoon aesthetics. Tone: sophisticated, warm, festive, and suitable for a premium corporate environment.",
+  'Dia do Cliente':            "B2B corporate relationship. Preferred scenes: two professionals shaking hands, executive signing a contract, business meeting between two people, partnership agreement moment. Avoid call center, headset, or customer service operator imagery.",
+  'Julho, Dia de Proteção às Florestas': "Forest protection and conservation. Aerial perspective — a vast, lush forest canopy stretching to the horizon, with winding rivers and streams cutting through the dense vegetation below. Emphasize the scale and richness of the ecosystem: layers of green canopy, sunlight filtering through mist, the natural geometry of waterways snaking through the forest. Tone: majestic, serene, and awe-inspiring — conveying the importance and beauty of forest preservation.",
+  'Dia de Proteção às Florestas': "Forest protection and conservation. Aerial perspective — a vast, lush forest canopy stretching to the horizon, with winding rivers and streams cutting through the dense vegetation below. Emphasize the scale and richness of the ecosystem: layers of green canopy, sunlight filtering through mist, the natural geometry of waterways snaking through the forest. Tone: majestic, serene, and awe-inspiring — conveying the importance and beauty of forest preservation.",
+  'Dia da Mata Atlântica':      "Atlantic Forest Day — celebrating Brazil's most biodiverse and threatened biome. Always include at least one iconic Atlantic Forest animal that is visually beautiful and naturally appealing — such as the golden lion tamarin, blue macaw, toucan, hummingbird, or colorful butterfly — positioned either in the foreground as a focal point or in the background as a complementary element. Surround it with lush Atlantic Forest vegetation: bromeliads, orchids, ferns, dense foliage, filtered light. Tone: vibrant, rich, and awe-inspiring — honoring the beauty and fragility of this ecosystem.",
+  'Dia da Amazônia':            "Amazon Day — celebrating the world's greatest tropical rainforest, the lungs and heart of the planet. Aerial perspective on a clear sunny day: an endless emerald canopy stretching to the horizon, massive winding rivers and tributaries reflecting the sunlight, isolated forest clearings, dramatic cloud formations above the treetops. Convey the Amazon's overwhelming scale, density, and vitality — a living, breathing superorganism. Lighting: golden hour or bright midday sun casting warm light across the canopy, creating depth and texture. The image should feel like an iconic, award-winning aerial photograph that makes the viewer understand why this forest is irreplaceable. Tone: majestic, awe-inspiring, powerful, and full of life.",
+  'Dia da Árvore':              "Tree Day — a powerful close-up celebration of Brazil's native forest. Feature a single, magnificent Brazilian tree as the undisputed hero of the image — such as a towering Jequitibá-rosa, Castanheira-do-Pará, Ipê-amarelo, Figueira, or Pau-brasil — with its full trunk, sprawling roots, and canopy rendered in extraordinary detail. Surround it with dense native forest vegetation and include a water element in the composition: a river, stream, or waterfall visible through or beside the trees. The scene should feel immersive and intimate — a true close-up of Brazilian native forest at its most majestic. Lighting: dappled sunlight filtering through the canopy, creating depth, atmosphere, and a sense of living, breathing wilderness. Tone: powerful, reverent, and deeply rooted in Brazil's natural heritage.",
+  'Dia da Natureza':            "Nature Day — celebrating the raw power and breathtaking beauty of the natural world. Capture the dramatic tension between the imposing grandeur of tropical forest and the brutal, unstoppable force of water: massive waterfalls thundering through lush jungle, like the Iguaçu Falls — walls of white water crashing against ancient rock, mist rising above the canopy, the forest standing tall and defiant around the cascades. The image should feel visceral, vibrant, and energetic — nature at its most overwhelming and magnificent. Lighting: dramatic natural light, rainbow effects from mist, deep greens contrasting with the white and turquoise of rushing water. Tone: powerful, awe-inspiring, and alive — a reminder of nature's untamed force.",
+  'Dia do Consumo Consciente':  "Conscious Consumption Day — nature reclaiming space within the objects of urban daily life. Feature close-up compositions of everyday premium objects containing living micro-ecosystems: a crystal glass on an elegant table enclosing a miniature forest, a premium water bottle with a river scene flowing inside, a crystal tumbler holding a tiny ocean or waterfall, a glass carafe with moss and ferns growing within, a wine glass sheltering a delicate miniature landscape, a premium beer glass with a lush green ecosystem suspended in the liquid, a crystal pitcher containing a flowing river scene. The natural world thrives inside the very objects we consume — a powerful, poetic visual metaphor for balance and responsibility. Style: hyperrealistic macro photography quality, premium materials, cinematic lighting, shallow depth of field. Tone: sophisticated, thought-provoking, and quietly powerful — not alarmist.",
+  'Dia Mundial do Solo':        "World Soil Day — celebrating the richness, texture, and vital importance of soil as the foundation of all life. Focus on the beauty of the earth itself: rich soil textures, layers of fertile ground, roots weaving through the earth, seeds germinating, plant life emerging from the soil, close-up of earth with natural moisture and organic matter. Do NOT include crawling soil creatures that may be considered unpleasant — such as worms, larvae, centipedes, or insects. Tone: grounded, earthy, and quietly powerful.",
+  'Junho, Dia Mundial do Meio Ambiente': "World Environment Day — global environmental consciousness and sustainability. The background should feature a soft, elegant scene related to nature or environment — lush greenery, forest depth, flowing water, or earth textures — rendered as a clean and subtle backdrop, deliberately soft-focused or with a shallow depth of field, allowing the main conceptual subject to stand out clearly. Tone: sophisticated, serene, and premium.",
+  'Dia Mundial do Meio Ambiente': "World Environment Day — global environmental consciousness and sustainability. The background should feature a soft, elegant scene related to nature or environment — lush greenery, forest depth, flowing water, or earth textures — rendered as a clean and subtle backdrop, deliberately soft-focused or with a shallow depth of field, allowing the main conceptual subject to stand out clearly. Tone: sophisticated, serene, and premium.",
 };
 
+const FORMAT_SPECS = {
+  '16x9':  { label:'16:9 HD',        sub:'Wallpaper · Banner',  promptSpec:'LANDSCAPE 16:9 aspect ratio, ultra high definition, widescreen. The image MUST be horizontal. Main visual subject on the right side. Left 50–65% of the canvas clean and softly detailed for text overlay. Do NOT generate a square or portrait image.' },
+  'square':{ label:'1080 × 1080 HD', sub:'Instagram · Square',  promptSpec:'SQUARE 1:1 aspect ratio, 1080×1080px, ultra high definition. The image MUST be perfectly square — not landscape, not portrait. Main subject on the right half. Left half clean for text overlay. Do NOT generate a 16:9 or portrait image.' },
+  'a4':    { label:'A4 HD',          sub:'Poster · Print',       promptSpec:'PORTRAIT A4 aspect ratio (210×297mm / roughly 2:3), ultra high definition, print-ready. The image MUST be vertical/portrait. Main subject occupies the lower two-thirds. Upper one-third clean with soft gradient background for headline. Do NOT generate a landscape or square image.' },
+};
+
+const STYLE_META = [
+  { key:'nature-hero',  label:'Nature Hero Photography',   desc:'Fotografia ultra-realista de natureza' },
+  { key:'esg-metaphor', label:'ESG Conceptual Metaphor',   desc:'Metáfora conceitual, sustentabilidade' },
+  { key:'paper-cut',    label:'Premium Paper Cut',          desc:'Ilustração editorial em camadas' },
+  { key:'watercolor',   label:'Editorial Watercolor',       desc:'Aquarela editorial e emocional' },
+  { key:'3d-characters',label:'Corporate 3D Characters',   desc:'Personagens 3D, educação e campanhas' },
+  { key:'human-photo',  label:'Human Professional Photo',  desc:'Fotografia corporativa, profissões' },
+];
+
+const EVENT_TO_STYLE = {
+  // Wallpapers
+  'Maio, Dia das Mães':                          'paper-cut',
+  'Março, Dia das Mulheres':                     'paper-cut',
+  'Agosto, Dia dos Pais':                        'paper-cut',
+  'Setembro, Setembro Amarelo':                  'paper-cut',
+  'Outubro, Outubro Rosa':                       'paper-cut',
+  'Novembro, Novembro Azul':                     'paper-cut',
+  'Abril, Páscoa':                               '3d-characters',
+  'Janeiro, Feliz Ano Novo':                     'paper-cut',
+  'Fevereiro, Carnaval':                         'watercolor',
+  'Junho, Dia dos Namorados':                    'watercolor',
+  'Julho, Férias':                               'watercolor',
+  'Dezembro, Boas Festas!':                      '3d-characters',
+  'Junho, Dia Mundial do Meio Ambiente':         'esg-metaphor',
+  'Julho, Dia de Proteção às Florestas':         'nature-hero',
+  // Social — ambiental
+  'Dia Mundial do Meio Ambiente':                'esg-metaphor',
+  'Dia de Proteção às Florestas':                'nature-hero',
+  'Dia da Árvore':                               'nature-hero',
+  'Dia da Natureza':                             'nature-hero',
+  'Dia da Mata Atlântica':                       'nature-hero',
+  'Dia da Amazônia':                             'nature-hero',
+  'Dia do Pantanal':                             'nature-hero',
+  // Social — ESG
+  'Dia Mundial da Água':                         'esg-metaphor',
+  'Dia da Terra':                                'esg-metaphor',
+  'Dia Mundial pela Limpeza da Água':            'esg-metaphor',
+  'Dia Mundial da Reciclagem':                   'esg-metaphor',
+  'Dia do Consumo Consciente':                   'esg-metaphor',
+  'Dia Mundial do Solo':                         'nature-hero',
+  'Dia Mundial da Segurança dos Alimentos':      'esg-metaphor',
+  // Social — emocional/celebrativo
+  'Dia Internacional da Mulher':                 'paper-cut',
+  'Dia das Mães':                                'paper-cut',
+  'Dia dos Pais':                                'paper-cut',
+  'Dia das Crianças':                            '3d-characters',
+  'Dia do Trabalho':                             'watercolor',
+  'Dia do Cliente':                              'human-photo',
+  'Dia do Comprador':                            'human-photo',
+};
+
+function getSuggestedStyle(ev) {
+  if (EVENT_TO_STYLE[ev.event]) return EVENT_TO_STYLE[ev.event];
+  if (ev.type === 'Profissão') return 'human-photo';
+  return 'watercolor';
+}
+
+function renderFormatSelector() {
+  return '<div class="config-label">FORMATO</div>' +
+    '<div class="format-pills">' +
+    Object.entries(FORMAT_SPECS).map(([k,f]) =>
+      '<button class="format-pill' + (k === selectedFormat ? ' active' : '') + '" ' +
+      'id="fmt-' + k + '" onclick="selectFormat(\'' + k + '\')">' +
+      f.label + ' <span style="font-weight:400;opacity:0.65;font-size:9.5px">' + f.sub + '</span></button>'
+    ).join('') +
+    '</div>';
+}
+
+function renderStyleSelector(suggested) {
+  return '<div class="config-label">ESTILO VISUAL</div>' +
+    '<div class="style-grid">' +
+    STYLE_META.map(s =>
+      '<div class="style-card' + (s.key === suggested ? ' active' : '') + '" ' +
+      'id="sty-' + s.key + '" onclick="selectStyle(\'' + s.key + '\')">' +
+      '<div class="style-card-name">' + s.label +
+      (s.key === suggested ? ' <span class="suggested-badge">Sugerido</span>' : '') +
+      '</div>' +
+      '<div class="style-card-desc">' + s.desc + '</div>' +
+      '</div>'
+    ).join('') +
+    '</div>';
+}
+
+function selectFormat(k) {
+  selectedFormat = k;
+  document.querySelectorAll('.format-pill').forEach(el => el.classList.remove('active'));
+  const btn = document.getElementById('fmt-' + k);
+  if (btn) btn.classList.add('active');
+}
+
+function selectStyle(k) {
+  selectedStyle = k;
+  document.querySelectorAll('.style-card').forEach(el => el.classList.remove('active'));
+  const card = document.getElementById('sty-' + k);
+  if (card) card.classList.add('active');
+}
+
+const MASTER_PROMPTS = {
+
+'nature-hero': `You are a Senior Creative Director, Advertising Art Director, and AI Prompt Engineer specialized in corporate visual communication.
+
+Your task is to generate highly detailed image-generation prompts for commemorative corporate dates while preserving exact visual language, composition principles, realism, sophistication, and editorial quality. The generated prompts must adapt the subject matter according to the commemorative date provided, while maintaining the same artistic DNA.
+
+CORE VISUAL IDENTITY
+
+Composition: Designed as a corporate communication banner/header. Large negative space on the left side. Main visual subject positioned predominantly on the right side. Clear visual hierarchy. Balanced composition suitable for inserting headlines and corporate messages. Avoid clutter.
+
+Style: Ultra-realistic photography. Premium advertising campaign quality. National Geographic meets luxury corporate branding. Cinematic environmental storytelling. Hyper-detailed textures. Natural realism. No cartoon, illustration, painting, vector, low-poly, CGI look, or artificial appearance.
+
+Visual Quality: Ultra high resolution. HDR. Professional photography. Sharp focus on the main subject. Rich micro-details. Exceptional texture fidelity. Natural depth perception. Atmospheric realism.
+
+Lighting: Natural environmental lighting. Soft cinematic light. Volumetric light rays when appropriate. Subtle atmospheric haze. Realistic highlights and shadows. Elegant and inspiring mood. Never dramatic, dark, apocalyptic, or aggressive.
+
+Depth: Strong sense of depth. Foreground, midground, and background layers. Natural perspective. Environmental immersion. Professional depth of field.
+
+Corporate Tone: The image must feel elegant, trustworthy, positive, inspirational, modern, premium, environmentally conscious, suitable for multinational companies and annual commemorative campaigns.
+
+SUBJECT ADAPTATION
+
+Choose the most iconic and visually impactful subject that immediately communicates the theme. The subject must be instantly recognizable, create emotional connection, integrate naturally into a rich environmental setting, and become the visual focal point on the right side.
+
+ENVIRONMENT DESIGN
+
+Create a fully immersive environment around the main subject. Reinforce the commemorative theme with realistic contextual elements showing ecological, cultural, or human significance. Examples: Oceans — coral reefs, marine life, sun rays underwater. Forests — lush vegetation, waterfalls, fog, biodiversity. Safety — human interaction, protective equipment, workplace realism.
+
+COLOR STRATEGY
+
+Develop a color palette inspired by the date. Ocean themes: deep blues, turquoise, aqua, sunlit cyan highlights. Forest themes: emerald greens, moss greens, warm earth tones. Energy themes: gold, amber, deep blue contrasts. Innovation themes: white, silver, soft blue accents. Colors must appear natural and organic. Avoid oversaturation.
+
+STRICTLY AVOID: Text, typography, logos, watermarks, infographics, corporate branding, frames, borders, icons, UI elements, overcrowding, artificial CGI appearance, unrealistic colors, stock-photo aesthetics, flat lighting.
+
+OUTPUT: Generate the final prompt in English covering main subject description, environmental storytelling, composition instructions, lighting, color palette, realism requirements, corporate advertising quality specifications, and a negative prompt section. The image must feel like a premium corporate commemorative campaign by a global advertising agency.`,
+
+'esg-metaphor': `You are a World-Class Advertising Creative Director, Sustainability Campaign Art Director, Brand Visual Strategist, and AI Prompt Engineer.
+
+Your mission is to generate highly sophisticated image-generation prompts for corporate commemorative dates. The resulting images must feel like premium sustainability, ESG, innovation, environmental responsibility, or corporate citizenship campaigns developed by leading global agencies. The image must communicate the commemorative message through a powerful visual metaphor rather than literal representation.
+
+CREATIVE PHILOSOPHY
+
+Always prioritize: conceptual thinking, symbolic storytelling, visual metaphors, emotional impact, simplicity with sophistication, premium corporate aesthetics. The image should instantly communicate the theme even before any text is added.
+
+CORE VISUAL STYLE
+
+Images must combine: hyperrealism, conceptual art, luxury advertising, environmental storytelling, premium CGI realism, editorial campaign design. The result must look like a high-budget international corporate campaign.
+
+COMPOSITION: Subject placement on the right side. Large clean negative space on the left (approximately 50–65% of canvas) for future headlines. Elegant, premium, intentional. No visual clutter.
+
+BACKGROUND CREATIVE FREEDOM: The background is an opportunity for meaningful storytelling. You are encouraged to be creative and expressive. Possible approaches: human hands gently cradling or interacting with the main conceptual object, suggesting care, responsibility, or human connection with nature; natural environments — forests, rivers, oceans, sky, soil — rendered either in sharp detail or with a soft bokeh/blur effect to create depth and atmosphere; abstract organic textures; aerial or macro nature photography. The background should complement and reinforce the theme without competing with the main subject. Blur or depth-of-field effects are welcome when they add elegance and visual hierarchy.
+
+WATER DROPLET COHERENCE: When the main conceptual object is a water droplet, the background must contain a body of water beneath it to create visual and contextual coherence. In natural settings: an ocean, lake, river, or the splash of a waterfall. In urban settings: an ornamental lake in a public square, a fountain, a swimming pool, or a rain puddle on a city surface. The droplet and the water below should feel part of the same visual story — origin and destination, cycle and continuity.
+
+VISUAL METAPHOR SYSTEM
+
+Translate the commemorative date into a symbolic object or conceptual centerpiece. Possible containers: crystal water droplet, transparent sphere, glass globe, glass terrarium, crystal prism, floating ecosystem, botanical capsule, circular biosphere, transparent dome, eco-engineered artifact. Inside or around the object, create a miniature world representing the theme.
+
+Examples: World Water Day — crystal water drop containing rivers, forests, industrial facilities, water cycles. Earth Day — glass Earth sphere supporting trees, biodiversity, ecosystems. Environment Day — self-contained ecosystem inside a transparent biosphere.
+
+MICRO-WORLD DESIGN: Highly detailed miniature ecosystem including vegetation, water, terrain, natural textures, architectural and industrial elements when appropriate. Everything should appear physically plausible.
+
+MATERIALS: Crystal glass, polished transparent surfaces, water, reflections, refractions, organic textures. Realistic optical properties, physically accurate reflections, subtle caustics, premium finish.
+
+LIGHTING: Soft volumetric illumination, global illumination, realistic reflections, subtle rim light, elegant highlights, atmospheric depth. Avoid harsh shadows, dramatic darkness, overexposure.
+
+COLOR SYSTEM: Sustainability — emerald green, forest green, moss, warm sunlight. Water — aqua, turquoise, deep blue, crystal white. Innovation — silver, blue, white, subtle neon accents. Energy — amber, gold, deep blue. Colors refined and premium. Avoid neon overload.
+
+DEPTH & REALISM: Macro photography quality, extreme detail, realistic depth of field, cinematic focus, physically based rendering, global illumination, ultra-high-resolution appearance.
+
+STRICTLY AVOID: Text, typography, logos, watermarks, icons, infographics, corporate branding, cartoon styles, flat illustrations, generic stock photography, visual clutter, unrealistic proportions.
+
+OUTPUT: Generate the final image prompt in English covering concept title, main visual metaphor, subject description, micro-ecosystem description, composition instructions, lighting, material specifications, color palette guidance, realism requirements, premium advertising quality specifications, and a negative prompt. The image must look like an award-winning international corporate sustainability campaign.`,
+
+'paper-cut': `You are a World-Class Editorial Art Director, Paper Cut Artist, Corporate Visual Strategist, and AI Prompt Engineer.
+
+Your task is to generate highly detailed image-generation prompts that replicate the visual language of premium layered paper-cut artwork used in corporate commemorative campaigns, emotional awareness initiatives, social responsibility programs, diversity campaigns, healthcare communications, family celebrations, and institutional branding.
+
+CREATIVE PHILOSOPHY
+
+The image must communicate emotion through simplicity. Focus on symbolism, emotional storytelling, visual harmony, graceful shapes, and human connection. Every element should contribute to a single emotional message. The artwork should feel meaningful without becoming overly decorative.
+
+CORE VISUAL STYLE: Premium paper cut illustration, layered paper sculpture effect, handcrafted appearance, elegant editorial design, dimensional paper art. The result should look as if carefully assembled from multiple sheets of premium textured paper. Avoid realistic photography. Avoid CGI appearance. Avoid cartoon aesthetics.
+
+PAPER CONSTRUCTION: All visual elements built using layered paper shapes with stacked layers, visible depth, subtle paper thickness, smooth cut contours, elegant curves, and realistic paper textures. Each layer creates natural dimensionality through shadows and depth.
+
+VISUAL STORYTELLING: Represent the commemorative theme through symbolic human-centered scenes. Father's Day — father guiding a child, protective silhouette, mentoring relationship. Mother's Day — mother embracing child, nurturing figure, caring interaction. Women's Day — elegant feminine silhouette, empowerment symbolism. Pink October — awareness ribbon integrated into human figure, support and resilience. Mental Health — protective hands, supportive figures, emotional connection. Diversity — interconnected human forms, symbolic unity. Storytelling must be symbolic rather than literal.
+
+CHARACTER DESIGN: Simplified silhouettes with minimal facial details, elegant body contours, graceful poses, universal representation. Figures should feel timeless and inclusive.
+
+COMPOSITION: Main illustration positioned predominantly on the right side. Reserve approximately 50–70% of the left side for future typography. Negative space must remain clean, soft, and visually calm.
+
+LAYER DEPTH: Multiple overlapping paper layers with foreground, midground, and background. Depth created through shadow casting, paper elevation, layered contours, and nested shapes. The effect should feel tactile and dimensional.
+
+COLOR PALETTE: Father's Day — navy blue, slate blue, warm gray, ivory. Mother's Day — lavender, blush pink, cream, soft mauve. Pink October — rose pink, pastel pink, dusty pink, warm ivory. Mental Health — calming blue, sage green, soft beige. Diversity — harmonious muted tones, warm neutrals. Avoid saturated colors, neon tones, strong contrast.
+
+TEXTURE: Fine grain, premium cardstock appearance, soft fiber texture, matte finish. Subtle paper textures throughout.
+
+LIGHTING: Soft studio lighting, diffuse illumination, subtle shadows, realistic paper depth, delicate highlights. Avoid dramatic lighting, strong directional shadows, high contrast.
+
+STRICTLY AVOID: Photorealism, CGI appearance, cartoon aesthetics, anime style, heavy outlines, bright saturated colors, typography, logos, watermarks, complex backgrounds, excessive detail, busy compositions.
+
+OUTPUT: Generate the final image prompt in English covering commemorative date, emotional core message, main symbolic scene, human interaction, layered paper structure description, composition instructions, color palette, texture specifications, lighting, emotional tone, premium editorial quality requirements, and a negative prompt. The image must resemble a luxury handcrafted paper-cut editorial artwork for a world-class corporate commemorative campaign.`,
+
+'watercolor': `You are a World-Class Editorial Illustrator, Watercolor Artist, Corporate Creative Director, and AI Prompt Engineer specialized in premium watercolor visual communication for multinational organizations.
+
+Your task is to generate highly detailed image-generation prompts that replicate the visual language of sophisticated watercolor editorial artwork used in corporate campaigns, commemorative dates, healthcare initiatives, employee engagement programs, diversity campaigns, well-being communications, and institutional storytelling.
+
+CREATIVE PHILOSOPHY
+
+The image must communicate emotion through artistic expression. The goal is not photographic realism. The goal is emotional storytelling through watercolor artistry. Every visual decision should reinforce humanity, empathy, appreciation, care, connection, dignity, and optimism. The image should feel refined, timeless, and emotionally intelligent.
+
+CORE VISUAL STYLE: Premium watercolor illustration, editorial illustration, hand-painted appearance, artistic portraiture, contemporary watercolor realism. The image should resemble artwork published in Harvard Business Review, The New Yorker, Financial Times Weekend, corporate sustainability reports, or healthcare campaigns.
+
+WATERCOLOR TECHNIQUE: Flowing pigments, soft gradients, color bleeding, watercolor washes, translucent layering, subtle splatter details, organic paint transitions. Preserve the beauty and unpredictability of real watercolor. Avoid digital-looking brushwork. Avoid hard vector edges.
+
+SUBJECT REPRESENTATION: The commemorative theme should be represented through people, professions, or symbolic human-centered moments. International Women's Day — elegant watercolor portrait of a confident woman. Pink October — female figure with dignity, resilience, and serenity. Mental Health — peaceful figure representing emotional well-being. HR Day — diverse professionals united. Customer Service — warm professional interaction.
+
+PORTRAIT & FIGURE STYLE: People should appear expressive, authentic, graceful, approachable, and inspiring. Facial expressions natural and emotionally resonant. Avoid exaggerated emotions, fashion-magazine aesthetics, glamour photography appearance.
+
+COMPOSITION: Primary subject predominantly on the right side. Reserve 50–70% of the left side for future headlines. Negative space clean, airy, elegant, lightly textured.
+
+COLOR PALETTE: Women's Day — lavender, violet, mauve, blush pink. Pink October — rose pink, pastel pink, dusty rose. Mental Health — soft blue, lavender, sage green. Professional Recognition — warm neutrals, muted corporate colors. Diversity — harmonious watercolor spectrum. Colors sophisticated, artistic, and balanced. Avoid neon, avoid oversaturation.
+
+BACKGROUND: Minimal. Watercolor washes, soft pigment clouds, subtle splashes, atmospheric gradients, organic paint textures. Background must support the subject without dominating.
+
+TEXTURE: Handmade watercolor paper texture, fine grain, subtle pigment accumulation, realistic watercolor edges.
+
+EMOTIONAL ATMOSPHERE: The artwork should evoke empathy, gratitude, calmness, respect, appreciation, inspiration, belonging, and care. Emotional impact genuine and understated.
+
+STRICTLY AVOID: Photorealism, 3D rendering, cartoon aesthetics, anime style, vector illustration, flat design, heavy outlines, corporate stock-photo appearance, logos, typography, watermarks, overly detailed backgrounds, hyper-saturated colors.
+
+OUTPUT: Generate the final image prompt in English covering commemorative date, emotional core theme, main subject description, human storytelling element, watercolor style specifications, composition instructions, color palette, background treatment, texture requirements, emotional atmosphere, editorial quality specifications, and a negative prompt. The image must resemble a premium editorial watercolor illustration commissioned for a multinational corporate campaign.`,
+
+'3d-characters': `You are a Senior Character Designer, Creative Director, 3D Animation Art Director, and AI Prompt Engineer specialized in premium corporate illustration campaigns.
+
+Your task is to generate highly detailed image-generation prompts following the visual language of modern 3D character-based corporate communication. Generated images must feel like they were created by a world-class animation studio for educational, innovation, technology, learning, people development, social responsibility, training, diversity, creativity, or commemorative campaigns. The style should combine the emotional appeal of Pixar and Disney-inspired character design with the cleanliness and professionalism required by multinational corporate communications.
+
+CREATIVE PHILOSOPHY: Always prioritize warmth, optimism, human connection, inclusion, curiosity, creativity, discovery, learning, and collaboration. The image should immediately create emotional engagement and feel joyful, intelligent, and approachable.
+
+CORE VISUAL STYLE: High-end 3D illustration, stylized character design, Pixar-inspired quality, premium animation rendering, soft cinematic lighting, smooth materials, rounded shapes, friendly visual language.
+
+CHARACTER DESIGN: Characters should be stylized, adorable, highly expressive, inclusive, diverse, and emotionally engaging. Facial Features: large expressive eyes, friendly smiles, rounded facial shapes, soft cheeks, approachable expressions. Body Proportions: slightly oversized heads, compact bodies, cartoon-inspired proportions, natural and friendly poses. Avoid hyperrealistic anatomy, aggressive expressions, exaggerated caricatures.
+
+DIVERSITY: When multiple characters are present, represent diversity naturally through different skin tones, hair textures, facial features, body types, and ages when relevant.
+
+SYMBOLIC CENTERPIECE: Characters should interact with a large symbolic object representing the commemorative theme. Innovation Day — giant light bulb, floating idea platform. Logistics Day — giant paper airplane, stylized delivery route. Safety Day — protective shield, safety helmet structure. Sustainability Day — giant leaf, eco-globe. Education Day — giant book, floating classroom. Technology Day — digital cloud, futuristic interface. The symbolic object must be visually dominant.
+
+COMPOSITION: Main scene positioned on the right side. Reserve 50–65% of the left side for future text. Keep left side clean and uncluttered.
+
+ENVIRONMENT: Minimalist, clean, soft, bright backgrounds. Possible elements: clouds, floating shapes, soft gradients, abstract geometric forms, educational elements. Everything should support the main scene without becoming the focus.
+
+COLOR PALETTE: Vibrant but controlled colors, soft gradients, friendly tones, contemporary corporate colors. Modern, positive, professional, youthful. Avoid dark palettes, muted gray dominance, heavy contrast.
+
+MATERIALS: Soft plastic, matte surfaces, satin finishes, smooth textures, stylized fabric, polished but subtle reflections. Materials should feel tactile and animation-ready.
+
+LIGHTING: Soft studio lighting, global illumination, gentle shadows, subtle rim lighting, bright optimistic atmosphere. Avoid harsh shadows, horror lighting, dramatic darkness.
+
+RENDER QUALITY: Pixar-quality rendering, ultra-clean geometry, high-end CGI, global illumination, ambient occlusion, soft depth of field, professional animation film quality.
+
+STRICTLY AVOID: Text, logos, watermarks, flat illustrations, 2D cartoon style, anime aesthetics, hyperrealism, dark themes, aggressive poses, visual clutter, complex backgrounds.
+
+OUTPUT: Generate the final image prompt in English covering campaign theme, main symbolic object, character description, character interaction, environment description, composition instructions, lighting, color palette, material specifications, rendering quality requirements, and a negative prompt. The image must resemble a premium corporate communication campaign by a world-class animation studio.`,
+
+'human-photo': `You are a Global Corporate Creative Director, Commercial Photographer, Brand Communication Specialist, and AI Prompt Engineer.
+
+Your task is to generate highly detailed image-generation prompts that replicate the visual language of premium corporate professional photography used in multinational internal communications, employer branding campaigns, institutional marketing, employee recognition programs, and professional commemorative dates. The resulting image must look like a real corporate photoshoot commissioned by a Fortune 500 company celebrating people, professions, expertise, teamwork, and workplace excellence.
+
+CREATIVE PHILOSOPHY: The central message must always be — People drive results. The image should communicate professionalism, competence, trust, collaboration, dedication, expertise, pride, responsibility, and human connection. The professional should be portrayed as the hero of the story.
+
+CORE VISUAL STYLE: Premium corporate photography, authentic workplace imagery, editorial business photography, realistic human interaction, commercial advertising quality. The image should feel genuine, approachable, credible, professional, and aspirational. Avoid stock-photo clichés. The scene must feel naturally captured rather than artificially staged.
+
+HUMAN-CENTERED STORYTELLING: The professional must be the primary subject capturing a meaningful workplace moment. Logistics — inventory management, warehouse operations, shipment coordination. Customer Service — assisting customers, handling support interactions. Human Resources — recruitment, interviews, onboarding. Engineering — project discussions, inspections, technical reviews. Maintenance — troubleshooting, equipment inspections. Safety — team briefings, risk assessments, workplace inspections. The activity should feel purposeful.
+
+AUTHENTIC ENVIRONMENTS: Industrial — manufacturing facilities, production lines, maintenance areas, warehouses, logistics centers. Corporate — offices, meeting rooms, innovation centers. Technical — laboratories, engineering workspaces, operational control rooms. The environment should reinforce the profession.
+
+COMPOSITION: Professional positioned predominantly on the right side. Reserve 50–65% of the left side for future headlines. Text area must remain clean, soft, and uncluttered.
+
+PROFESSIONAL REPRESENTATION: Confident, focused, approachable, competent. Avoid exaggerated smiles, unrealistic poses, fashion-model behavior, staged corporate clichés. Expressions natural. Diversity: diverse ethnic backgrounds, different ages, different genders, inclusive workplace representation.
+
+LIGHTING: Natural daylight, soft office lighting, industrial ambient lighting, realistic workplace illumination. Soft shadows, balanced highlights, natural contrast. Avoid dramatic cinematic lighting, excessive HDR, harsh shadows.
+
+CAMERA LANGUAGE: Commercial photography quality, Canon EOS R5 / Sony A1 quality, full-frame professional lenses. Suggested lenses: 50mm, 85mm, 135mm. Shallow depth of field, professional lens compression, subtle background blur. Keep the professional sharply focused.
+
+COLOR PALETTE: Office — whites, grays, navy blue, neutral tones. Industrial — steel, machinery colors, safety yellow, operational blue. Logistics — warehouse neutrals, cardboard browns, safety colors. Colors realistic and professional.
+
+STRICTLY AVOID: Text, logos, watermarks, artificial AI artifacts, overly dramatic poses, corporate stock-photo clichés, unrealistic smiles, excessive retouching, unrealistic beauty standards, empty workplace scenes, cartoon aesthetics, CGI appearance.
+
+OUTPUT: Generate the final image prompt in English covering commemorative date, featured profession, workplace environment, professional activity, human interaction, composition instructions, lighting, camera specifications, depth of field requirements, corporate photography quality requirements, and a negative prompt. The image must resemble an award-winning corporate communication campaign celebrating professional excellence through authentic premium workplace photography.`
+
+};
+
+function buildImagePrompt(ev, styleKey, format) {
+  const master    = MASTER_PROMPTS[styleKey];
+  const fmt       = FORMAT_SPECS[format];
+  const eventYear = new Date().getFullYear() + 1;
+  let ctx = SPECIAL_DATE_CONTEXT[ev.event] ? ' ' + SPECIAL_DATE_CONTEXT[ev.event] : '';
+  ctx = ctx.replace('{YEAR}', eventYear);
+  const fmtBlock = 'FORMAT REQUIREMENT — CRITICAL — OVERRIDES ALL OTHER INSTRUCTIONS:\n' +
+    fmt.promptSpec + '\n' +
+    'This format requirement takes absolute priority over any aspect ratio, orientation, or composition guidance mentioned elsewhere in this prompt. Apply it without exception.';
+  return fmtBlock +
+    '\n\n---\n\n' + master +
+    '\n\n---\n\nCOMMEMORATIVE DATE / CAMPAIGN THEME: ' + ev.event + '.' + ctx +
+    '\n\nFORMAT REMINDER (same as above — must be respected): ' + fmt.promptSpec +
+    '\n\nOUTPUT INSTRUCTIONS:\n' +
+    'Item 1 — Image Prompt (in English): The prompt MUST open with this exact format specification — "' + fmt.promptSpec + '" — followed by all the visual elements. Do not omit or paraphrase the format line. It must be the first sentence of the prompt.\n' +
+    'Item 2 — Texto para Canva (in Portuguese): texto sugerido para sobrepor na imagem no Canva, máximo 2 frases curtas.\n' +
+    'Item 3 — Dica de Composição (in Portuguese): dica indicando onde posicionar o texto na imagem.';
+}
+
 function buildPrompt(ev) {
-  if (ev.type === 'Wallpaper') {
-    const themeContext = WALLPAPER_CONTEXT[ev.event] ? ` ${WALLPAPER_CONTEXT[ev.event]}` : '';
-    return `Você é um diretor de arte e geração de prompts para imagens com IA. A empresa é a SCHÜTZ VASITEX, uma empresa industrial brasileira com identidade visual sóbria e corporativa.\n\nO tema do wallpaper é: ${ev.event}.${themeContext}\n\nCrie uma imagem para usar no Midjourney, DALL-E, ChatGPT, Gemini ou Canva AI.\n\nA composição deve posicionar o elemento visual principal à direita ou no canto direito da imagem, deixando o lado esquerdo limpo e com fundo suave — esse espaço será usado para adicionar texto no Canva. O formato é landscape 16:9.\n\nPara temas como "Dia das Mães", "Dia das Mulheres" e "Dia dos Pais" opte por ilustração vetorial estilo paper cut, com camadas sobrepostas, sombras suaves e estética editorial contemporânea.\n\nJá para a "Páscoa" e "Dia das Crianças", use ilustração em aquarela digital, estilo soft realism e estética emocional delicada.\n\nPara "Dia Mundial do Meio Ambiente", "Dia de Proteção às Florestas" e tudo que tiver relação com sustentabilidade e meio ambiente, use render 3D conceitual estilo publicidade, como por exemplo gota de água em vidro translúcido contendo ecossistema interno, esfera tipo vidro ou outro elemento análogo que transmita modernidade, iluminação suave e acabamento premium.\n\nPara todo outros temas, use render 3D fotorrealista com iluminação suave de estúdio e estética corporativa.\n\nO resultado deve ser sempre elegante e corporativo. Escolha também a paleta que melhor serve o tema. Tons neutros funcionam bem para datas como por exemplo Dia das Mães ou Dia das Mulheres. Cores mais dramáticas e saturadas funcionam para temas como por exemplo meio ambiente, Carnaval, Páscoa ou Natal.\n\nQuando fizer sentido ao tema, incorpore tons azuis como referência discreta da identidade da marca.\n\nA composição deve sempre incluir ao menos um elemento visual concreto como uma silhueta humana, figura, objeto, gota, planta, animal ou forma reconhecível com conexão direta ao tema. Não use elementos clichês como coração e rosas, flores, use apenas quando pertinentes ao tema, nunca em excesso, coisas muito rebuscadas jamais e preze por um layout sempre clean.\n\nOutros recursos criativos como aquarela realista, porém supermoderna ou arte em linha fina também estilo moderno pode complementar quando fizerem sentido mesclando os estilos. Se optar por aquarela, o tratamento deve ser de obra de arte realista, refinada ultramoderna, quase uma ilustração real, nunca com viés infantil.\n\nA imagem a ser gerada não deve incluir texto, pois o texto será adicionado no Canva.\n\nEntregue três itens. O item 1 e quaisquer observações, anotações ou comentários adicionais devem ser integralmente em inglês. O item 2 e o item 3 devem ser em português.\n\nItem 1: prompt de imagem em inglês, contemplando todas as orientações acima sem exceção, pronto para copiar e usar diretamente no gerador de imagens.\nItem 2: texto sugerido em português para sobrepor no Canva, com no máximo 2 frases curtas.\nItem 3: dica de composição em português indicando onde posicionar o texto na imagem.`;
-  }
   if (ev.type === 'Social') {
     if (ev.event === 'Dia do Comprador') {
       return `Você é um redator de conteúdo para redes sociais com profundo conhecimento da voz da SCHÜTZ VASITEX. ${brand}\n\nA data comemorativa é "${ev.event}", em ${formatDate(ev.date)}.\n\n${writingRules}\n\nGere 2 textos distintos para esta data.\n\nO primeiro com foco no comprador como cliente da SCHÜTZ VASITEX (profissionais e empresas que adquirem embalagens industriais). Tom de reconhecimento e valorização do relacionamento comercial, leve e positivo.\n\nO segundo com foco no comprador como colaborador interno da SCHÜTZ VASITEX (profissional de compras do time). Tom de homenagem genuína à função, celebrativo e acolhedor. Caráter interno.\n\nCada texto deve ter no máximo 3 parágrafos e de 3 a 5 hashtags ao final, fora do corpo do texto.`;
@@ -514,22 +889,23 @@ function isQuotaError(msg) {
   return /quota|rate.limit|429|resource.exhausted/i.test(msg || '');
 }
 
-function resultCard(modelKey, text) {
-  const isFlash = modelKey === 'flash';
-  const label = MODELS[modelKey].label.toUpperCase();
+function resultCard(modelKey, text, suffix) {
+  if (suffix === undefined) suffix = '';
+  const isFlash     = modelKey === 'flash';
+  const label       = MODELS[modelKey].label.toUpperCase();
   const headerClass = isFlash ? 'result-header-flash' : 'result-header-lite';
   const labelClass  = isFlash ? 'result-label-flash'  : 'result-label-lite';
   const copyClass   = isFlash ? 'copy-btn-flash'       : 'copy-btn-lite';
-  const copyId      = 'copy-' + modelKey;
-  const bodyId      = 'body-' + modelKey;
+  const copyId      = 'copy-' + modelKey + suffix;
+  const bodyId      = 'body-' + modelKey + suffix;
   const isError     = text.startsWith('⚠');
-  return `<div class="result-card">
-    <div class="result-header ${headerClass}">
-      <span class="result-label ${labelClass}">${label}</span>
-      ${!isError ? `<button class="copy-btn ${copyClass}" id="${copyId}" onclick="copyResult('${bodyId}','${copyId}')">Copiar</button>` : ''}
-    </div>
-    <div class="result-body ${isError ? 'error-box' : ''}" id="${bodyId}"></div>
-  </div>`;
+  return '<div class="result-card">' +
+    '<div class="result-header ' + headerClass + '">' +
+      '<span class="result-label ' + labelClass + '">' + label + '</span>' +
+      (!isError ? '<button class="copy-btn ' + copyClass + '" id="' + copyId + '" onclick="copyResult(\'' + bodyId + '\',\'' + copyId + '\')">Copiar</button>' : '') +
+    '</div>' +
+    '<div class="result-body' + (isError ? ' error-box' : '') + '" id="' + bodyId + '"></div>' +
+  '</div>';
 }
 
 function togglePrompt() {
@@ -539,50 +915,93 @@ function togglePrompt() {
   arrow.classList.toggle('open', open);
 }
 
-/* ── GENERATE ── */
+/* ── GENERATE TEXT ── */
 async function handleGenerate() {
   if (!selectedEv) return;
-  const btn = document.getElementById('gen-btn');
+  if (selectedEv.type === 'Wallpaper') { handleGenerateImage(); return; }
+
+  const btn     = document.getElementById('gen-btn');
   const btnText = document.getElementById('gen-btn-text');
-  btn.disabled = true;
+  btn.disabled  = true;
   btnText.innerHTML = '<span class="spinner"></span> Gerando...';
   document.getElementById('quota-bar').style.display = 'none';
 
-  const ca = document.getElementById('content-area');
-  ca.innerHTML = `<div class="loading-box"><div class="load-icon">✦</div><div class="load-text">Flash e Flash-Lite gerando em paralelo...</div></div>`;
+  const area = document.getElementById('text-results-area');
+  area.innerHTML = '<div class="loading-box"><div class="load-icon">✦</div><div class="load-text">Flash e Flash-Lite gerando em paralelo...</div></div>';
 
   const prompt = buildPrompt(selectedEv);
-
-  const useSystem = selectedEv.type !== 'Wallpaper';
   const [flashResult, liteResult] = await Promise.all([
-    callModel('flash', prompt, useSystem).catch(e => '⚠ ' + e.message),
-    callModel('lite',  prompt, useSystem).catch(e => '⚠ ' + e.message),
+    callModel('flash', prompt, true).catch(e => '⚠ ' + e.message),
+    callModel('lite',  prompt, true).catch(e => '⚠ ' + e.message),
   ]);
 
   const anyQuota = isQuotaError(flashResult) || isQuotaError(liteResult);
   if (anyQuota) document.getElementById('quota-bar').style.display = 'block';
 
-  ca.innerHTML = `
-    <div class="dual-wrap">
-      <div class="dual-cards">
-        ${resultCard('flash', flashResult)}
-        ${resultCard('lite',  liteResult)}
-      </div>
-      <div class="prompt-box">
-        <div class="prompt-toggle" onclick="togglePrompt()">
-          <span class="prompt-toggle-label">PROMPT UTILIZADO</span>
-          <div style="display:flex;align-items:center;gap:8px">
-            <button class="copy-btn" id="copy-prompt-btn" onclick="event.stopPropagation();copyPrompt()" style="font-size:11px;padding:3px 11px">Copiar prompt</button>
-            <span class="prompt-arrow" id="prompt-arrow">▼</span>
-          </div>
-        </div>
-        <div class="prompt-content" id="prompt-content"></div>
-      </div>
-    </div>`;
+  area.innerHTML =
+    '<div class="dual-wrap">' +
+      '<div class="dual-cards">' + resultCard('flash', flashResult, '') + resultCard('lite', liteResult, '') + '</div>' +
+      '<div class="prompt-box">' +
+        '<div class="prompt-toggle" onclick="togglePrompt()">' +
+          '<span class="prompt-toggle-label">PROMPT UTILIZADO</span>' +
+          '<div style="display:flex;align-items:center;gap:8px">' +
+            '<button class="copy-btn" id="copy-prompt-btn" onclick="event.stopPropagation();copyPrompt()" style="font-size:11px;padding:3px 11px">Copiar prompt</button>' +
+            '<span class="prompt-arrow" id="prompt-arrow">▼</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="prompt-content" id="prompt-content"></div>' +
+      '</div>' +
+    '</div>';
 
-  document.getElementById('body-flash').textContent = flashResult;
-  document.getElementById('body-lite').textContent  = liteResult;
-  document.getElementById('prompt-content').textContent = useSystem ? systemPrompt + '\n\n' + prompt : prompt;
+  document.getElementById('body-flash').textContent  = flashResult;
+  document.getElementById('body-lite').textContent   = liteResult;
+  document.getElementById('prompt-content').textContent = systemPrompt + '\n\n' + prompt;
+
+  btnText.textContent = '↺ Gerar novamente';
+  btn.disabled = false;
+}
+
+/* ── GENERATE IMAGE PROMPT ── */
+async function handleGenerateImage() {
+  if (!selectedEv) return;
+
+  const isWallpaper = selectedEv.type === 'Wallpaper';
+  const btn     = document.getElementById(isWallpaper ? 'gen-btn' : 'img-gen-btn');
+  const btnText = document.getElementById(isWallpaper ? 'gen-btn-text' : 'img-gen-btn-text');
+  btn.disabled  = true;
+  btnText.innerHTML = '<span class="spinner"></span> Gerando...';
+  document.getElementById('quota-bar').style.display = 'none';
+
+  const area = document.getElementById('img-results-area');
+  area.innerHTML = '<div class="loading-box"><div class="load-icon">✦</div><div class="load-text">Flash e Flash-Lite gerando prompt de imagem...</div></div>';
+
+  const prompt = buildImagePrompt(selectedEv, selectedStyle, selectedFormat);
+  const [flashResult, liteResult] = await Promise.all([
+    callModel('flash', prompt, false).catch(e => '⚠ ' + e.message),
+    callModel('lite',  prompt, false).catch(e => '⚠ ' + e.message),
+  ]);
+
+  const anyQuota = isQuotaError(flashResult) || isQuotaError(liteResult);
+  if (anyQuota) document.getElementById('quota-bar').style.display = 'block';
+
+  area.innerHTML =
+    '<div class="dual-wrap">' +
+      '<div class="dual-cards">' + resultCard('flash', flashResult, '-img') + resultCard('lite', liteResult, '-img') + '</div>' +
+      '<div class="prompt-box">' +
+        '<div class="prompt-toggle" onclick="togglePromptImg()">' +
+          '<span class="prompt-toggle-label">PROMPT UTILIZADO</span>' +
+          '<div style="display:flex;align-items:center;gap:8px">' +
+            '<button class="copy-btn" id="copy-img-prompt-btn" onclick="event.stopPropagation();copyImgPrompt()" style="font-size:11px;padding:3px 11px">Copiar prompt</button>' +
+            '<span class="prompt-arrow" id="prompt-img-arrow">▼</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="prompt-content" id="prompt-img-content"></div>' +
+      '</div>' +
+    '</div>';
+
+  document.getElementById('body-flash-img').textContent = flashResult;
+  document.getElementById('body-lite-img').textContent  = liteResult;
+  document.getElementById('prompt-img-content').textContent = prompt;
 
   btnText.textContent = '↺ Gerar novamente';
   btn.disabled = false;
@@ -608,6 +1027,26 @@ function copyResult(bodyId, btnId) {
     btn.textContent = '✓ Copiado!';
     btn.classList.add('copied');
     setTimeout(() => { btn.textContent = prev; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function togglePromptImg() {
+  const content = document.getElementById('prompt-img-content');
+  const arrow   = document.getElementById('prompt-img-arrow');
+  if (!content || !arrow) return;
+  const open = content.classList.toggle('open');
+  arrow.classList.toggle('open', open);
+}
+
+function copyImgPrompt() {
+  const text = document.getElementById('prompt-img-content')?.textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-img-prompt-btn');
+    if (!btn) return;
+    btn.textContent = '✓ Copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copiar prompt'; btn.classList.remove('copied'); }, 2000);
   });
 }
 </script>
